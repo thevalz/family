@@ -78,9 +78,25 @@
   .tile .val { font-size:26px; font-weight:600; letter-spacing:-0.02em; }
   .tile .val small { font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; }
   .tile .meta { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .tile .meta.caution { color:var(--warn-ink); }
+  /* primary-card trend treatment (GIR + blood sugar) */
+  .tile.trend { border-left:3px solid var(--border); }
+  .tile.trend.good { border-left-color:var(--good);
+    background:color-mix(in srgb, var(--good) 6%, var(--surface)); }
+  .tile.trend.warn { border-left-color:var(--warning);
+    background:color-mix(in srgb, var(--warning) 7%, var(--surface)); }
+  .tile.trend.flat { border-left-color:var(--axis); }
+  .pill { display:inline-flex; align-items:center; gap:4px; margin-top:6px;
+    font-size:11px; font-weight:600; line-height:1; padding:3px 7px;
+    border-radius:999px; border:1px solid var(--border); }
+  .pill.good { color:var(--good);     background:color-mix(in srgb, var(--good) 10%, transparent); }
+  .pill.warn { color:var(--warn-ink); background:color-mix(in srgb, var(--warning) 14%, transparent); }
+  .pill.flat { color:var(--ink-2);    background:transparent; }
+  .pill .ar { font-size:12px; }
 
   /* chart cards */
   .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 12px 10px; margin-top:12px; }
+  #timelineCard { position:relative; }   /* positioning context for the crosshair + tooltip */
   .panel { position:relative; }
   .panel + .panel { margin-top:2px; }
   .plab { font-size:12px; color:var(--ink-2); margin:2px 0 0 4px; display:flex; gap:6px; align-items:center; }
@@ -290,6 +306,8 @@ const BIRTH_MS = CONFIG.birth ? new Date(CONFIG.birth).getTime() : null;
 function hoursOfLife(t){ return BIRTH_MS==null ? null : (t - BIRTH_MS)/3600e3; }
 function dayOfLife(t){ const h=hoursOfLife(t); return h==null?null:Math.floor(h/24)+1; }
 function ageLabel(t){ const h=hoursOfLife(t); if(h==null) return ""; return `Day ${Math.floor(h/24)+1} · ${h.toFixed(0)}h`; }
+// age-appropriate lower weaning/watch line for BG (mirrors the chart reference lines)
+function bgLowLine(t){ return (BIRTH_MS!=null && hoursOfLife(t) > 48) ? 65 : 50; }
 let AXMODE = "clock";   // "clock" | "age"
 
 let DATA = [];
@@ -414,25 +432,65 @@ function niceTicks(min,max,n=4){
   return out;
 }
 
+// Directional trend for a primary tile. goodDir "up"=BG (toward safe range),
+// "down"=GIR (weaning). Arrow encodes literal direction; color+word encode good/bad
+// (decoupled, since "down" is good for GIR but bad for BG). Returns null if nothing
+// to compare (single reading).
+function trend(cur, prev, goodDir){
+  if(cur==null || prev==null) return null;
+  const d = cur - prev;
+  const eps = goodDir==="down" ? 0.1 : 1;                 // GIR ~0.1 mg/kg/min; BG 1 mg/dL
+  if(Math.abs(d) < eps)
+    return {cls:"flat", arrow:"→", label:"holding", aria:"holding steady vs previous reading"};
+  const mag = goodDir==="down" ? Math.abs(d).toFixed(1) : String(Math.round(Math.abs(d)));
+  const improving = goodDir==="down" ? d<0 : d>0;
+  const arrow = d<0 ? "▼" : "▲";
+  const word  = goodDir==="down" ? (improving?"lower":"higher")    // GIR
+                                 : (improving?"higher":"lower");   // BG
+  return { cls: improving?"good":"warn", arrow, label:`${mag} ${word}`,
+           aria:`${mag} ${word} than previous reading, ${improving?"improving":"worsening"}` };
+}
+
 function renderTiles(){
   const withBg = DATA.filter(r=>r.bg!=null);
   const last = DATA[DATA.length-1];
   const lastBg = withBg[withBg.length-1];
   const prevBg = withBg[withBg.length-2];
   const g = gir(last);
-  let bgDelta="";
-  if(lastBg && prevBg){
-    const d=lastBg.bg-prevBg.bg; const up=d>=0;
-    bgDelta=`<div class="meta" style="color:${up?'var(--good)':'var(--ink-2)'}">${up?'▲':'▼'} ${Math.abs(d)} vs prior</div>`;
-  }
+
+  // GIR is a step function that holds flat between drip changes — compare against the
+  // most recent earlier reading whose GIR actually differs (the last wean step), so the
+  // trend reflects weaning progress instead of reading "holding" between changes.
+  let gPrev=null, foundDistinct=false;
+  for(let i=DATA.length-2;i>=0;i--){ const gi=gir(DATA[i]);
+    if(Math.abs(gi-g)>0.1){ gPrev=gi; foundDistinct=true; break; } }
+  const girTrend = DATA.length<2 ? null
+    : foundDistinct ? trend(g, gPrev, "down")
+    : {cls:"flat", arrow:"→", label:"holding", aria:"drip unchanged so far"};
+  const bgTrend = trend(lastBg?lastBg.bg:null, prevBg?prevBg.bg:null, "up");
+
+  // clinical zone → the tile meta, coloured as caution when in a watch zone
+  const girCaution = g>CONFIG.girHighSupport;
+  const bgCaution  = lastBg && lastBg.bg < bgLowLine(tof(lastBg));
+
   const tiles=[
-    {lab:"Current GIR", val:`${g.toFixed(1)} <small>mg/kg/min</small>`, meta: g>CONFIG.girHighSupport?"high support (&gt;8)":"in typical range"},
-    {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—", meta: lastBg?(atTxt(lastBg)+(BIRTH_MS!=null?` · ${ageLabel(tof(lastBg))}`:'')):"", extra:bgDelta},
+    {lab:"Current GIR", val:`${g.toFixed(1)} <small>mg/kg/min</small>`,
+     meta: girCaution?"high support (&gt;8)":"in typical range", metaCls: girCaution?"caution":"", trend:girTrend},
+    {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—",
+     meta: lastBg?(atTxt(lastBg)+(BIRTH_MS!=null?` · ${ageLabel(tof(lastBg))}`:'')):"",
+     metaCls: bgCaution?"caution":"", trend:bgTrend},
     {lab:"IV drip", val:`D${last.dex} <small>@ ${last.iv} mL/hr</small>`, meta:`${ivGramsPerHr(last).toFixed(1)} g dextrose/hr`},
     {lab:"Latest feed", val:`${feedVol(last)} <small>mL</small>`, meta:`${last.ml||0} mL formula @ ${last.fort||CONFIG.defaultFort}cal${last.bm?` + ${last.bm} BM`:''} · ${Math.round(feedKcal(last))} kcal`}
   ];
-  document.getElementById("tiles").innerHTML = tiles.map(t=>
-    `<div class="tile"><div class="lab">${t.lab}</div><div class="val">${t.val}</div>${t.extra||""}<div class="meta">${t.meta}</div></div>`).join("");
+  document.getElementById("tiles").innerHTML = tiles.map(t=>{
+    const tr=t.trend;
+    const cls = tr ? `tile trend ${tr.cls}` : "tile";
+    const pill = tr ? `<div class="pill ${tr.cls}" aria-label="${tr.aria}">`+
+                      `<span class="ar" aria-hidden="true">${tr.arrow}</span>${tr.label}</div>` : "";
+    return `<div class="${cls}"><div class="lab">${t.lab}</div>`+
+           `<div class="val">${t.val}</div>${pill}`+
+           `<div class="meta${t.metaCls?' '+t.metaCls:''}">${t.meta}</div></div>`;
+  }).join("");
 }
 function atTxt(r){ const dt=new Date(tof(r)); return dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
 
