@@ -17,7 +17,7 @@ and how his sugar responds.
 | File | What it is |
 |---|---|
 | [`tracker.html`](tracker.html) | The tool. Open it in any browser — no install, works offline. Charts, a full data table, and a form to log new readings. |
-| [`readings.csv`](readings.csv) | Plain-text master log of every measurement (open in Excel / Sheets). Columns mirror the original bedside format: `date, time, measurement, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml`. |
+| [`readings.csv`](readings.csv) | Plain-text master log of every measurement (open in Excel / Sheets): `date, time, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml, fortification_kcal_oz, breast_milk_ml`. |
 | `README.md` | This page. |
 
 The tracker renders from an embedded `READINGS` array (a static page can't read a local
@@ -30,8 +30,8 @@ Open `tracker.html` by double-clicking it, or view it as a live page on your pho
 
 - Born **July 2, 8:18 AM**.
 - Birth weight **10 lb 2 oz = 4.59 kg** (large for gestational age).
-- Fed **Enfamil Gentlease, fortified to 24 kcal/oz**, while on a continuous **D20**
-  (20% dextrose) IV drip.
+- Fed **Enfamil Gentlease** (fortified to 20, then 24 kcal/oz), with **breast milk**
+  being introduced, while on a continuous **D20** (20% dextrose) IV drip.
 
 Weight and birth time are the two constants at the top of `tracker.html`. Weight drives
 every GIR number; birth time drives the **hours-of-life** axis — toggle the timeline

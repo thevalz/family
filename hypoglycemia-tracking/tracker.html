@@ -14,6 +14,7 @@
     --s3:#eda100;  /* yellow — formula / carbohydrate */
     --s4:#4a3aa7;  /* violet — fat */
     --s5:#e87ba4;  /* magenta— protein */
+    --s6:#0a8a3f;  /* green  — breast milk */
     --good:#006300; --warning:#fab219; --warn-ink:#8a5b00;
     --band: rgba(42,120,214,0.06);
   }
@@ -22,7 +23,7 @@
       --page:#0d0d0d; --surface:#1a1a19;
       --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-      --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181;
+      --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181; --s6:#2cae63;
       --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219;
       --band: rgba(57,135,229,0.10);
     }
@@ -31,7 +32,7 @@
     --page:#0d0d0d; --surface:#1a1a19;
     --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181;
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181; --s6:#2cae63;
     --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219;
     --band: rgba(57,135,229,0.10);
   }
@@ -183,6 +184,8 @@
     <div class="fld"><label>Time</label><input id="f_t" type="time" required></div>
     <div class="fld"><label>Blood sugar (mg/dL)</label><input id="f_bg" type="number" inputmode="numeric" placeholder="e.g. 58"></div>
     <div class="fld"><label>Formula (mL)</label><input id="f_ml" type="number" inputmode="decimal" placeholder="e.g. 25"></div>
+    <div class="fld"><label>Fortification (cal/oz)</label><input id="f_fort" type="number" inputmode="decimal" placeholder="24"></div>
+    <div class="fld"><label>Breast milk (mL)</label><input id="f_bm" type="number" inputmode="decimal" placeholder="0"></div>
     <div class="fld"><label>Dextrose %</label><input id="f_dex" type="number" inputmode="decimal" placeholder="20"></div>
     <div class="fld"><label>IV rate (mL/hr)</label><input id="f_iv" type="number" inputmode="decimal" placeholder="13"></div>
     <div class="formactions">
@@ -201,7 +204,7 @@
     <summary>How the numbers are calculated & where they come from</summary>
     <p><b>GIR (Glucose Infusion Rate)</b> = (%dextrose × IV rate mL/hr) ÷ (6 × weight kg) — the Brigham &amp; Women's / CWN neonatal glucose pathway, referencing Chowning &amp; Adamkin, <i>J Perinatol</i> 2015. This baby's weight is <b id="wTxt"></b>.</p>
     <p><b>Weaning rule</b> (first 48h, same pathway): consider weaning GIR by 0.5 if BG &gt; 50, by 1.0 if BG &gt; 60. A GIR above ~8 mg/kg/min is considered high support.</p>
-    <p><b>IV dextrose grams/hr</b> = IV rate × (%dextrose ÷ 100). <b>Formula glucose</b> = feed volume × carbohydrate per 100 mL, from the formula's label (an estimate — dietary lactose is digested to glucose + galactose, so it isn't a 1:1 IV-dextrose equivalent).</p>
+    <p><b>IV dextrose grams/hr</b> = IV rate × (%dextrose ÷ 100). <b>Feed glucose</b> = volume × carbohydrate per 100 mL. Formula carbs scale with each feed's fortification (Enfamil Gentlease base 10.8 g carb per 100 Cal; a 24 cal/oz feed carries more carb per mL than a 20 cal/oz feed); breast milk adds ~7 g carb per 100 mL. These are estimates — dietary lactose is digested to glucose + galactose, so feeds aren't a 1:1 IV-dextrose equivalent.</p>
     <p><b>Fluid cap</b> ≈ 100 mL/kg/day (guideline ceiling on combined IV + oral intake).</p>
     <p class="disc" style="margin:8px 0 0">Sources provided by the family: Brigham/CWN "WNH G.1" neonatal glucose pathway; Giouleka et al., <i>Children</i> 2023; Rozance &amp; Hay, <i>Matern Health Neonatol Perinatol</i> 2016. This is a personal tracking aid, not medical advice — the NICU team's readings and orders are authoritative.</p>
   </details>
@@ -216,16 +219,18 @@ const CONFIG = {
   birth: "2026-07-02T08:18:00",    // date & time of birth → drives "hours of life"
   fluidCapPerKgPerDay: 100,        // mL/kg/day ceiling (IV + oral)
   girHighSupport: 8,               // mg/kg/min — "high support" reference
-  // Formula nutrition per 100 mL. Enfamil Gentlease, fortified to 24 kcal/oz.
-  // Base Gentlease per 100 Cal = 2.3 g protein / 5.3 g fat / 10.8 g carb, scaled to
-  // 24 kcal/oz (81 kcal/100 mL) assuming concentration-style fortification (macros scale
-  // proportionally). If fortified with a specific fat/carb module instead, adjust the split.
-  formula: {
-    name: "Enfamil Gentlease, fortified to 24 kcal/oz",
-    kcalPer100: 81,
-    carbPer100: 8.8,   // g — the glucose-source number
-    fatPer100: 4.3,    // g
-    proteinPer100: 1.9 // g
+  // Formula = Enfamil Gentlease. Macros are given per 100 Calories; grams per 100 mL depend
+  // on how many kcal/oz each feed is fortified to (per-reading `fort` field), so nutrition is
+  // computed per row. Base Gentlease per 100 Cal = 2.3 g protein / 5.3 g fat / 10.8 g carb.
+  formulaBase: {
+    name: "Enfamil Gentlease",
+    perCal: { carb: 10.8, fat: 5.3, protein: 2.3 }     // grams per 100 Calories
+  },
+  defaultFort: 24,     // kcal/oz assumed if a reading omits fortification
+  // Mother's milk per 100 mL (mature milk, ~20 kcal/oz). Adjust if it gets fortified.
+  breastMilk: {
+    name: "Breast milk",
+    kcalPer100: 67, carbPer100: 7.0, fatPer100: 3.6, proteinPer100: 1.1
   }
 };
 
@@ -235,16 +240,16 @@ const CONFIG = {
  *  === READINGS ===                                                 *
  * ================================================================= */
 const READINGS = [
-  { d:"2026-07-03", t:"06:00", dex:20, iv:13, bg:68,   ml:15 },
-  { d:"2026-07-03", t:"11:00", dex:20, iv:13, bg:50,   ml:15 },
-  { d:"2026-07-03", t:"14:15", dex:20, iv:13, bg:60,   ml:15 },
-  { d:"2026-07-03", t:"20:20", dex:20, iv:13, bg:56,   ml:15 },
-  { d:"2026-07-04", t:"02:30", dex:20, iv:13, bg:60,   ml:15 },
-  { d:"2026-07-04", t:"08:30", dex:20, iv:13, bg:52,   ml:15 },
-  { d:"2026-07-04", t:"11:30", dex:20, iv:13, bg:null, ml:20 },
-  { d:"2026-07-04", t:"17:30", dex:20, iv:12, bg:61,   ml:20 },
-  { d:"2026-07-04", t:"20:30", dex:20, iv:12, bg:null, ml:25 },
-  { d:"2026-07-04", t:"23:30", dex:20, iv:13, bg:null, ml:25 }
+  { d:"2026-07-03", t:"06:00", dex:20, iv:13, bg:68, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"11:00", dex:20, iv:13, bg:50, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"14:15", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"20:20", dex:20, iv:13, bg:56, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"02:30", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"08:30", dex:20, iv:13, bg:52, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"14:00", dex:20, iv:12, bg:49, ml:20, fort:24, bm:0 },
+  { d:"2026-07-04", t:"20:30", dex:20, iv:12, bg:61, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"02:30", dex:20, iv:12, bg:65, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"08:30", dex:20, iv:12, bg:65, ml:15, fort:24, bm:10 }
 ];
 /* === END READINGS === */
 
@@ -257,10 +262,21 @@ function saveExtra(a){ try { localStorage.setItem(LS_KEY, JSON.stringify(a)); } 
 
 function gir(r){ return (r.dex * r.iv) / (6 * CONFIG.weightKg); }
 function ivGramsPerHr(r){ return r.iv * (r.dex/100); }
-function feedCarbG(r){ return (r.ml||0) * CONFIG.formula.carbPer100/100; }
-function feedFatG(r){ return (r.ml||0) * CONFIG.formula.fatPer100/100; }
-function feedProtG(r){ return (r.ml||0) * CONFIG.formula.proteinPer100/100; }
-function feedKcal(r){ return (r.ml||0) * CONFIG.formula.kcalPer100/100; }
+// Formula macros per 100 mL at a given fortification (kcal/oz), scaled from the per-100-Cal base.
+function formulaPer100(fort){
+  const f = fort || CONFIG.defaultFort;
+  const kcal = 100 * f / 29.5735;                 // kcal per 100 mL at this caloric density
+  const b = CONFIG.formulaBase.perCal;
+  return { kcal, carb: b.carb*kcal/100, fat: b.fat*kcal/100, protein: b.protein*kcal/100 };
+}
+const BM = CONFIG.breastMilk;
+function formulaVol(r){ return r.ml||0; }
+function bmVol(r){ return r.bm||0; }
+function feedVol(r){ return (r.ml||0) + (r.bm||0); }
+function feedCarbG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.carb/100 + (r.bm||0)*BM.carbPer100/100; }
+function feedFatG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.fat/100 + (r.bm||0)*BM.fatPer100/100; }
+function feedProtG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.protein/100 + (r.bm||0)*BM.proteinPer100/100; }
+function feedKcal(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.kcal/100 + (r.bm||0)*BM.kcalPer100/100; }
 function tof(r){ return new Date(r.d + "T" + (r.t.length===5?r.t:r.t) + ":00").getTime(); }
 const BIRTH_MS = CONFIG.birth ? new Date(CONFIG.birth).getTime() : null;
 function hoursOfLife(t){ return BIRTH_MS==null ? null : (t - BIRTH_MS)/3600e3; }
@@ -405,7 +421,7 @@ function renderTiles(){
     {lab:"Current GIR", val:`${g.toFixed(1)} <small>mg/kg/min</small>`, meta: g>CONFIG.girHighSupport?"high support (&gt;8)":"in typical range"},
     {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—", meta: lastBg?(atTxt(lastBg)+(BIRTH_MS!=null?` · ${ageLabel(tof(lastBg))}`:'')):"", extra:bgDelta},
     {lab:"IV drip", val:`D${last.dex} <small>@ ${last.iv} mL/hr</small>`, meta:`${ivGramsPerHr(last).toFixed(1)} g dextrose/hr`},
-    {lab:"Latest feed", val:`${last.ml||0} <small>mL</small>`, meta:`${feedCarbG(last).toFixed(1)} g carb · ${Math.round(feedKcal(last))} kcal`}
+    {lab:"Latest feed", val:`${feedVol(last)} <small>mL</small>`, meta:`${last.ml||0} mL formula @ ${last.fort||CONFIG.defaultFort}cal${last.bm?` + ${last.bm} BM`:''} · ${Math.round(feedKcal(last))} kcal`}
   ];
   document.getElementById("tiles").innerHTML = tiles.map(t=>
     `<div class="tile"><div class="lab">${t.lab}</div><div class="val">${t.val}</div>${t.extra||""}<div class="meta">${t.meta}</div></div>`).join("");
@@ -481,29 +497,27 @@ function renderTimeline(){
   document.getElementById("p_gir").insertAdjacentHTML("afterbegin",
     `<div class="plab"><span class="dot" style="background:var(--s2)"></span>GIR — how hard the drip is working <span class="cur">mg/kg/min</span></div>`);
 
-  // Panel 3 — Intake (formula bars mL + IV dextrose g/hr step)
-  const mlMax=Math.max(30, ...DATA.map(r=>r.ml||0))+4;
+  // Panel 3 — Intake (formula + breast milk volume per feed, stacked)
+  const mlMax=Math.max(30, ...DATA.map(feedVol))+4;
   document.getElementById("p_intake").innerHTML='';
   panel(document.getElementById("p_intake"), {
     h:158, y0:0, y1:mlMax, ticks:niceTicks(0,mlMax,4), title:"Intake", showX:true,
-    fmtY:v=>v, aria:"Formula feed volume in milliliters as bars over time",
+    fmtY:v=>v, aria:"Feed volume per feed in milliliters, formula and breast milk stacked",
     drawFn:(yOf,plotH,PT)=>{
       let s=ageMarkerSvg(PT, PT+plotH, false);
-      const bw=14;
+      const bw=14; const base=yOf(0);
       DATA.forEach(r=>{
-        if(!r.ml) return;
-        const x=xOf(tof(r)); const y=yOf(r.ml); const h=yOf(0)-y;
-        s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${Math.max(0,h).toFixed(1)}" rx="4" fill="var(--s3)"/>`;
-        s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${(yOf(0)-3).toFixed(1)}" width="${bw}" height="3" fill="var(--s3)"/>`;
+        const x=xOf(tof(r)); const fml=r.ml||0, bm=r.bm||0;
+        if(fml){ const y=yOf(fml); s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${(base-y).toFixed(1)}" rx="3" fill="var(--s3)"/>`; }
+        if(bm){ const yTop=yOf(fml+bm), yBot=yOf(fml)-2; const h=yBot-yTop; if(h>0) s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="3" fill="var(--s6)"/>`; }
       });
-      // label last feed
-      const lr=DATA[DATA.length-1];
-      if(lr.ml){ s+=`<text x="${xOf(tof(lr)).toFixed(1)}" y="${(yOf(lr.ml)-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${lr.ml}</text>`; }
+      const lr=DATA[DATA.length-1]; const tv=feedVol(lr);
+      if(tv){ s+=`<text x="${xOf(tof(lr)).toFixed(1)}" y="${(yOf(tv)-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${tv}</text>`; }
       return s;
     }
   });
   document.getElementById("p_intake").insertAdjacentHTML("afterbegin",
-    `<div class="plab"><span class="dot" style="background:var(--s3)"></span>Formula per feed <span class="cur">mL</span></div>`);
+    `<div class="plab"><span class="dot" style="background:var(--s3)"></span>Formula <span class="dot" style="background:var(--s6)"></span>Breast milk <span class="cur">mL per feed</span></div>`);
 }
 
 function renderCumulative(){
@@ -545,8 +559,8 @@ function renderCumulative(){
 
 function renderNutrition(){
   document.getElementById("nutNote").innerHTML =
-    `Based on <b>${esc(CONFIG.formula.name)}</b> — ${CONFIG.formula.kcalPer100} kcal, ${CONFIG.formula.carbPer100} g carb, ${CONFIG.formula.fatPer100} g fat, ${CONFIG.formula.proteinPer100} g protein per 100 mL. Each feed, stacked by macronutrient (grams). Carbs are the direct glucose; fat &amp; protein fuel the gluconeogenesis that steadies his sugar between feeds.`;
-  const feeds=DATA.filter(r=>r.ml);
+    `<b>${esc(CONFIG.formulaBase.name)}</b> (fortified to 20 or 24 kcal/oz per feed) plus breast milk once it's given. Each feed stacked by macronutrient (grams), combining both sources. Carbs are the direct glucose; fat &amp; protein fuel the gluconeogenesis that steadies his sugar between feeds.`;
+  const feeds=DATA.filter(r=>feedVol(r)>0);
   const totMax=Math.max(...feeds.map(r=>feedCarbG(r)+feedFatG(r)+feedProtG(r)),1);
   const el=document.getElementById("p_nut"); el.innerHTML='';
   panel(el,{h:190,y0:0,y1:totMax*1.12,ticks:niceTicks(0,totMax*1.12,4),showX:true,title:"Grams per feed",
@@ -580,7 +594,7 @@ function renderFluid(){
   const byDay={};
   DATA.forEach(r=>{
     const day=r.d; byDay[day]=byDay[day]||{ivRates:[],feed:0,day};
-    byDay[day].ivRates.push(r.iv); byDay[day].feed += (r.ml||0);
+    byDay[day].ivRates.push(r.iv); byDay[day].feed += feedVol(r);
   });
   const days=Object.values(byDay).sort((a,b)=>a.day<b.day?-1:1).map(o=>{
     const ivRate=o.ivRates.reduce((a,b)=>a+b,0)/o.ivRates.length;
@@ -612,20 +626,20 @@ function renderFluid(){
     }});
   document.getElementById("fluidLegend").innerHTML=
     `<span><span class="lk" style="background:var(--s2)"></span>IV dextrose (mL/day)</span>`+
-    `<span><span class="lk" style="background:var(--s3)"></span>Formula (mL/day)</span>`+
+    `<span><span class="lk" style="background:var(--s3)"></span>Feeds (mL/day)</span>`+
     `<span><span class="lk" style="background:var(--warning)"></span>Fluid cap</span>`;
 }
 
 function renderTable(){
   const ageCol = BIRTH_MS!=null;
-  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Carb g</th><th>kcal</th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Fort</th><th>BM mL</th><th>Carb g</th><th>kcal</th></tr></thead><tbody>`;
   DATA.forEach(r=>{
     const dt=new Date(tof(r));
     h+=`<tr><td>${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td>`+
        (ageCol?`<td>${hoursOfLife(tof(r)).toFixed(0)}h</td>`:'')+
        `<td class="${r.bg==null?'pending':''}">${r.bg==null?'—':r.bg}</td>`+
        `<td>D${r.dex}</td><td>${r.iv}</td><td>${gir(r).toFixed(1)}</td>`+
-       `<td>${r.ml||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td></tr>`;
+       `<td>${r.ml||0}</td><td>${r.fort||CONFIG.defaultFort}</td><td>${r.bm||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td></tr>`;
   });
   document.getElementById("tbl").innerHTML=h+`</tbody>`;
 }
@@ -651,7 +665,8 @@ function initHover(){
       `<div class="row"><span><span class="dot" style="background:var(--s1)"></span>Blood sugar</span><b>${r.bg==null?'—':r.bg+' mg/dL'}</b></div>`+
       `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>GIR</span><b>${gir(r).toFixed(1)}</b></div>`+
       `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>Drip</span><b>D${r.dex} @ ${r.iv}</b></div>`+
-      `<div class="row"><span><span class="dot" style="background:var(--s3)"></span>Formula</span><b>${r.ml||0} mL</b></div>`;
+      `<div class="row"><span><span class="dot" style="background:var(--s3)"></span>Formula</span><b>${r.ml||0} mL @ ${r.fort||CONFIG.defaultFort} cal</b></div>`+
+      (r.bm?`<div class="row"><span><span class="dot" style="background:var(--s6)"></span>Breast milk</span><b>${r.bm} mL</b></div>`:'');
     tip.style.opacity=1;
     let tx=best.rx; const tw=150;
     tx=Math.max(tw/2+4, Math.min(rect.width-tw/2-4, tx));
@@ -666,24 +681,27 @@ function initHover(){
 function initForm(){
   const f=document.getElementById("addForm"), msg=document.getElementById("formMsg");
   document.getElementById("f_d").value="2026-07-05";
-  document.getElementById("f_dex").value=20; document.getElementById("f_iv").value=13;
+  document.getElementById("f_dex").value=20; document.getElementById("f_iv").value=12;
+  document.getElementById("f_fort").value=24;
   f.addEventListener("submit",e=>{
     e.preventDefault();
     const d=document.getElementById("f_d").value, t=document.getElementById("f_t").value;
     if(!d||!t){ return; }
     const rec={ d, t, dex:+document.getElementById("f_dex").value||20, iv:+document.getElementById("f_iv").value||0,
       bg: document.getElementById("f_bg").value===""?null:+document.getElementById("f_bg").value,
-      ml: +document.getElementById("f_ml").value||0 };
+      ml: +document.getElementById("f_ml").value||0,
+      fort: +document.getElementById("f_fort").value||CONFIG.defaultFort,
+      bm: +document.getElementById("f_bm").value||0 };
     const extra=loadExtra(); extra.push(rec); saveExtra(extra);
     msg.textContent="Saved ✓ charts updated"; setTimeout(()=>msg.textContent="",3000);
-    document.getElementById("f_bg").value=""; document.getElementById("f_ml").value=""; document.getElementById("f_t").value="";
+    document.getElementById("f_bg").value=""; document.getElementById("f_ml").value=""; document.getElementById("f_bm").value=""; document.getElementById("f_t").value="";
     renderAll();
   });
   document.getElementById("exportBtn").addEventListener("click",()=>{
     const extra=loadExtra();
     const wrap=document.getElementById("exwrap"), out=document.getElementById("exOut");
     if(!extra.length){ wrap.style.display="block"; out.value="// No device-added readings yet."; return; }
-    out.value=extra.map(r=>`  { d:"${r.d}", t:"${r.t}", dex:${r.dex}, iv:${r.iv}, bg:${r.bg==null?'null':r.bg}, ml:${r.ml} },`).join("\n");
+    out.value=extra.map(r=>`  { d:"${r.d}", t:"${r.t}", dex:${r.dex}, iv:${r.iv}, bg:${r.bg==null?'null':r.bg}, ml:${r.ml}, fort:${r.fort||CONFIG.defaultFort}, bm:${r.bm||0} },`).join("\n");
     wrap.style.display="block"; out.select();
   });
   document.getElementById("clearBtn").addEventListener("click",()=>{
