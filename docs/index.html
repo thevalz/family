@@ -128,6 +128,24 @@
   thead th { color:var(--ink-2); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0; background:var(--surface); }
   tbody tr:last-child td { border-bottom:none; }
   td.pending { color:var(--muted); }
+  /* in-situ row editing */
+  .actcell { white-space:nowrap; text-align:right; }
+  /* keep the actions column reachable without horizontal scrolling */
+  th:last-child, td.actcell { position:sticky; right:0; }
+  td.actcell { background:var(--surface); }
+  tr.editing td.actcell { background:color-mix(in srgb, var(--s1) 5%, var(--surface)); }
+  .rowbtn { font:inherit; font-size:11.5px; padding:4px 9px; border-radius:7px; cursor:pointer;
+    background:var(--surface); color:var(--ink-2); border:1px solid var(--border); }
+  .rowbtn:hover { color:var(--ink); }
+  .rowbtn.primary { background:var(--s1); color:#fff; border-color:transparent; }
+  .rowbtn.danger { color:var(--warn-ink); }
+  .rowbtn + .rowbtn { margin-left:5px; }
+  tr.editing td { background:color-mix(in srgb, var(--s1) 5%, var(--surface)); vertical-align:top; }
+  td .tin { font:inherit; font-size:12.5px; width:100%; min-width:56px; padding:4px 5px;
+    border:1px solid var(--border); border-radius:6px; background:var(--page); color:var(--ink); text-align:right; }
+  .dtedit { display:flex; flex-direction:column; gap:4px; min-width:120px; }
+  .dtedit .tin { text-align:left; }
+  .tbltools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
 
   /* form */
   form { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:12px;
@@ -200,6 +218,10 @@
   <h2>Every reading</h2>
   <p class="h2note">The full log. This is also the table view of every chart above.</p>
   <div class="tablewrap"><table id="tbl"></table></div>
+  <div class="tbltools">
+    <button type="button" class="btn ghost" id="jsonBtn">⤓ Download all readings (.json)</button>
+    <span class="h2note" style="margin:0">Tap <b>Edit</b> on any row to change it in place. Edits, additions, and deletions save on this device.</span>
+  </div>
 
   <h2>Add a reading</h2>
   <p class="h2note">Log the next check. It saves to this device instantly and updates every chart. Use <b>Export</b> to copy rows into the file so they're kept for good.</p>
@@ -215,7 +237,7 @@
     <div class="formactions">
       <button type="submit" class="btn primary">Add reading</button>
       <button type="button" class="btn ghost" id="exportBtn">Export rows</button>
-      <button type="button" class="btn ghost" id="clearBtn">Clear device entries</button>
+      <button type="button" class="btn ghost" id="clearBtn">Reset device changes</button>
       <span class="msg" id="formMsg"></span>
     </div>
   </form>
@@ -264,6 +286,7 @@ const CONFIG = {
  *  === READINGS ===                                                 *
  * ================================================================= */
 const READINGS = [
+  { d:"2026-07-02", t:"08:30", dex:20, iv:0,  bg:9,  ml:0,  fort:24, bm:0 },
   { d:"2026-07-03", t:"06:00", dex:20, iv:13, bg:68, ml:15, fort:20, bm:0 },
   { d:"2026-07-03", t:"11:00", dex:20, iv:13, bg:50, ml:15, fort:20, bm:0 },
   { d:"2026-07-03", t:"14:15", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
@@ -271,9 +294,13 @@ const READINGS = [
   { d:"2026-07-04", t:"02:30", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
   { d:"2026-07-04", t:"08:30", dex:20, iv:13, bg:52, ml:15, fort:20, bm:0 },
   { d:"2026-07-04", t:"14:00", dex:20, iv:12, bg:49, ml:20, fort:24, bm:0 },
+  { d:"2026-07-04", t:"17:30", dex:20, iv:13, bg:null, ml:15, fort:20, bm:0 },
   { d:"2026-07-04", t:"20:30", dex:20, iv:12, bg:61, ml:25, fort:24, bm:0 },
+  { d:"2026-07-04", t:"23:30", dex:20, iv:12, bg:null, ml:25, fort:24, bm:0 },
   { d:"2026-07-05", t:"02:30", dex:20, iv:12, bg:65, ml:25, fort:24, bm:0 },
-  { d:"2026-07-05", t:"08:30", dex:20, iv:12, bg:65, ml:15, fort:24, bm:10 }
+  { d:"2026-07-05", t:"05:30", dex:20, iv:12, bg:null, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"08:30", dex:20, iv:12, bg:65, ml:15, fort:24, bm:10 },
+  { d:"2026-07-05", t:"11:34", dex:20, iv:10, bg:null, ml:30, fort:24, bm:5 }
 ];
 /* === END READINGS === */
 
@@ -281,8 +308,11 @@ const READINGS = [
  *  Derived data                                                     *
  * ================================================================= */
 const LS_KEY = "glucoseTrackerEntries.v1";
+const LS_EDITS = "glucoseTrackerEdits.v1";   // { rowId: {field overrides} | {__deleted:true} }
 function loadExtra(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } }
 function saveExtra(a){ try { localStorage.setItem(LS_KEY, JSON.stringify(a)); } catch(e){} }
+function loadEdits(){ try { return JSON.parse(localStorage.getItem(LS_EDITS)) || {}; } catch(e){ return {}; } }
+function saveEdits(o){ try { localStorage.setItem(LS_EDITS, JSON.stringify(o)); } catch(e){} }
 
 function gir(r){ return (r.dex * r.iv) / (6 * CONFIG.weightKg); }
 function ivGramsPerHr(r){ return r.iv * (r.dex/100); }
@@ -311,9 +341,20 @@ function bgLowLine(t){ return (BIRTH_MS!=null && hoursOfLife(t) > 48) ? 65 : 50;
 let AXMODE = "clock";   // "clock" | "age"
 
 let DATA = [];
+let EDITING = null;   // rowId currently being edited in the table, or null
+// Stable row ids: file rows "f<index>", device-added rows "x<index>". Edits/deletes are
+// stored as overrides keyed by id, so a file row can be corrected without touching the file.
 function rebuild(){
-  const extra = loadExtra();
-  DATA = READINGS.concat(extra)
+  const edits = loadEdits();
+  const base   = READINGS.map((r,i) => ({ ...r, _id:"f"+i, _src:"file" }));
+  const extras = loadExtra().map((r,i) => ({ ...r, _id:"x"+i, _src:"ls" }));
+  DATA = base.concat(extras)
+    .map(r => {
+      const e = edits[r._id];
+      if(e && e.__deleted) return null;
+      return e ? { ...r, ...e } : r;
+    })
+    .filter(Boolean)
     .map(r => ({ ...r, bg: (r.bg===undefined?null:r.bg) }))
     .filter(r => r.d && r.t)
     .sort((a,b)=> tof(a)-tof(b));
@@ -696,18 +737,80 @@ function renderFluid(){
     `<span><span class="lk" style="background:var(--warning)"></span>Fluid cap</span>`;
 }
 
+function editRowHtml(r, ageCol){
+  const fort = r.fort||CONFIG.defaultFort;
+  const inp = (k,v,attr="") => `<input class="tin" data-k="${k}" value="${v==null?'':v}" ${attr}>`;
+  return `<tr data-id="${r._id}" class="editing">`+
+    `<td><div class="dtedit">${inp('d',r.d,'type="date"')}${inp('t',r.t,'type="time"')}</div></td>`+
+    (ageCol?`<td>—</td>`:'')+
+    `<td>${inp('bg',r.bg,'type="number" inputmode="numeric" placeholder="—"')}</td>`+
+    `<td>${inp('dex',r.dex,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('iv',r.iv,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${gir(r).toFixed(1)}</td>`+
+    `<td>${inp('ml',r.ml||0,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('fort',fort,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('bm',r.bm||0,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td>`+
+    `<td class="actcell">`+
+      `<button class="rowbtn primary" data-act="save">Save</button>`+
+      `<button class="rowbtn" data-act="cancel">Cancel</button>`+
+      `<button class="rowbtn danger" data-act="delete">Delete</button></td></tr>`;
+}
 function renderTable(){
   const ageCol = BIRTH_MS!=null;
-  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Fort</th><th>BM mL</th><th>Carb g</th><th>kcal</th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Fort</th><th>BM mL</th><th>Carb g</th><th>kcal</th><th></th></tr></thead><tbody>`;
   DATA.forEach(r=>{
+    if(EDITING===r._id){ h+=editRowHtml(r, ageCol); return; }
     const dt=new Date(tof(r));
-    h+=`<tr><td>${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td>`+
+    h+=`<tr data-id="${r._id}"><td>${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td>`+
        (ageCol?`<td>${hoursOfLife(tof(r)).toFixed(0)}h</td>`:'')+
        `<td class="${r.bg==null?'pending':''}">${r.bg==null?'—':r.bg}</td>`+
        `<td>D${r.dex}</td><td>${r.iv}</td><td>${gir(r).toFixed(1)}</td>`+
-       `<td>${r.ml||0}</td><td>${r.fort||CONFIG.defaultFort}</td><td>${r.bm||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td></tr>`;
+       `<td>${r.ml||0}</td><td>${r.fort||CONFIG.defaultFort}</td><td>${r.bm||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td>`+
+       `<td class="actcell"><button class="rowbtn" data-act="edit">Edit</button></td></tr>`;
   });
   document.getElementById("tbl").innerHTML=h+`</tbody>`;
+}
+
+/* ---- in-situ table editing + full-grid JSON export ---- */
+function initTable(){
+  const tbl=document.getElementById("tbl");
+  tbl.addEventListener("click", e=>{
+    const btn=e.target.closest("button[data-act]"); if(!btn) return;
+    const tr=btn.closest("tr"); const id=tr && tr.getAttribute("data-id");
+    const act=btn.dataset.act;
+    if(act==="edit"){ EDITING=id; renderTable(); const inp=tbl.querySelector("tr.editing input"); if(inp) inp.focus(); }
+    else if(act==="cancel"){ EDITING=null; renderTable(); }
+    else if(act==="save"){ saveEditRow(id, tr); }
+    else if(act==="delete"){ deleteRow(id); }
+  });
+  document.getElementById("jsonBtn").addEventListener("click", exportJson);
+}
+function saveEditRow(id, tr){
+  const val=k=>{ const el=tr.querySelector(`input[data-k="${k}"]`); return el?el.value.trim():""; };
+  const d=val('d'), t=val('t');
+  if(!d||!t){ alert("Date and time are both required."); return; }
+  const rec={ d, t,
+    dex:+val('dex')||0, iv:+val('iv')||0,
+    bg: val('bg')===""?null:+val('bg'),
+    ml:+val('ml')||0, fort:+val('fort')||CONFIG.defaultFort, bm:+val('bm')||0 };
+  const edits=loadEdits(); edits[id]=rec; saveEdits(edits);
+  EDITING=null; renderAll();
+}
+function deleteRow(id){
+  if(!confirm("Delete this reading? Use “Reset device changes” to restore it later.")) return;
+  const edits=loadEdits(); edits[id]={__deleted:true}; saveEdits(edits);
+  EDITING=null; renderAll();
+}
+function exportJson(){
+  const rows=DATA.map(r=>({ d:r.d, t:r.t, dex:r.dex, iv:r.iv,
+    bg:(r.bg==null?null:r.bg), ml:r.ml||0, fort:r.fort||CONFIG.defaultFort, bm:r.bm||0 }));
+  const blob=new Blob([JSON.stringify(rows,null,2)], {type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`glucose-readings-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 
 /* ---- shared crosshair + tooltip over the timeline ---- */
@@ -771,7 +874,7 @@ function initForm(){
     wrap.style.display="block"; out.select();
   });
   document.getElementById("clearBtn").addEventListener("click",()=>{
-    if(confirm("Remove readings added on this device? (Readings saved in the file stay.)")){ saveExtra([]); renderAll(); }
+    if(confirm("Reset all changes made on this device — added rows, edits, and deletions? (Readings saved in the file stay.)")){ saveExtra([]); saveEdits({}); EDITING=null; renderAll(); }
   });
 }
 
@@ -806,7 +909,7 @@ document.getElementById("disc").innerHTML =
   `. Personal tracking aid — not medical advice.`;
 document.getElementById("wTxt").textContent="4.59 kg (10 lb 2 oz)";
 rebuild(); setDomain();
-renderAll(); initHover(); initForm(); initTheme(); initAxToggle();
+renderAll(); initHover(); initForm(); initTheme(); initAxToggle(); initTable();
 
 /* PWA: register the service worker so the app installs & works offline */
 if("serviceWorker" in navigator){
