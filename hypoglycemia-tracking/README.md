@@ -23,10 +23,15 @@ Open `tracker.html` by double-clicking it, or view it as a live page on your pho
 
 ## The baby
 
+- Born **July 2, 8:18 AM**.
 - Birth weight **10 lb 2 oz = 4.59 kg** (large for gestational age).
 - Being fed formula while on a continuous **D20** (20% dextrose) IV drip.
 
-Weight drives every GIR number, so it's the one constant at the top of the file.
+Weight and birth time are the two constants at the top of `tracker.html`. Weight drives
+every GIR number; birth time drives the **hours-of-life** axis — toggle the timeline
+between **Clock time** and **Hours of life**, and the clinically meaningful **48h** and
+**72h** boundaries show as vertical marks. (48h is when the weaning thresholds step up
+from >50/>60 to >65/>75 — the reference lines on the blood-sugar chart shift with it.)
 
 ## The measures (and where they come from)
 

@@ -56,6 +56,10 @@
     padding:6px 10px; cursor:pointer;
   }
   .tbtn:hover { color:var(--ink); }
+  .axtoggle { display:inline-flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; margin:0 0 10px; }
+  .seg { font:inherit; font-size:12.5px; padding:6px 13px; background:var(--surface); color:var(--ink-2); border:none; cursor:pointer; }
+  .seg.on { background:var(--s1); color:#fff; }
+  .seg + .seg { border-left:1px solid var(--border); }
 
   /* stat tiles */
   .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:6px 0 4px; }
@@ -137,6 +141,10 @@
   <!-- ===================== TIMELINE (Approaches A+B+C, shared time axis) ===================== -->
   <h2>How it all moves together</h2>
   <p class="h2note">One shared time axis. Read straight down a moment to see his sugar, how hard the drip is working (GIR), and what's going in. Hover / tap for exact values.</p>
+  <div class="axtoggle" role="group" aria-label="Horizontal axis mode">
+    <button class="seg on" data-mode="clock" type="button">Clock time</button>
+    <button class="seg" data-mode="age" type="button">Hours of life</button>
+  </div>
   <div class="card" id="timelineCard">
     <div class="crosshair" id="xhair"></div>
     <div class="tip" id="tip"></div>
@@ -205,6 +213,7 @@
  * ================================================================= */
 const CONFIG = {
   weightKg: 4.593,                 // 10 lb 2 oz
+  birth: "2026-07-02T08:18:00",    // date & time of birth → drives "hours of life"
   fluidCapPerKgPerDay: 100,        // mL/kg/day ceiling (IV + oral)
   girHighSupport: 8,               // mg/kg/min — "high support" reference
   // Formula nutrition per 100 mL. PLACEHOLDER = standard 20 kcal/oz term formula.
@@ -251,6 +260,11 @@ function feedFatG(r){ return (r.ml||0) * CONFIG.formula.fatPer100/100; }
 function feedProtG(r){ return (r.ml||0) * CONFIG.formula.proteinPer100/100; }
 function feedKcal(r){ return (r.ml||0) * CONFIG.formula.kcalPer100/100; }
 function tof(r){ return new Date(r.d + "T" + (r.t.length===5?r.t:r.t) + ":00").getTime(); }
+const BIRTH_MS = CONFIG.birth ? new Date(CONFIG.birth).getTime() : null;
+function hoursOfLife(t){ return BIRTH_MS==null ? null : (t - BIRTH_MS)/3600e3; }
+function dayOfLife(t){ const h=hoursOfLife(t); return h==null?null:Math.floor(h/24)+1; }
+function ageLabel(t){ const h=hoursOfLife(t); if(h==null) return ""; return `Day ${Math.floor(h/24)+1} · ${h.toFixed(0)}h`; }
+let AXMODE = "clock";   // "clock" | "age"
 
 let DATA = [];
 function rebuild(){
@@ -275,9 +289,20 @@ function setDomain(){
 function xOf(t){ return ML + (t-T0)/(T1-T0) * (VBW-ML-MR); }
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
-// x-axis ticks every 6h, labelled "Jul 4 · 6a"
+// x-axis ticks. Clock mode: every 6h wall-clock. Age mode: every 12h of life.
 function xTicks(){
-  const out=[]; const step=6*3600e3;
+  const out=[];
+  if(AXMODE==="age" && BIRTH_MS!=null){
+    const step=12; // hours of life
+    let H=Math.ceil(hoursOfLife(T0)/step)*step;
+    for(; ; H+=step){
+      const t=BIRTH_MS + H*3600e3; if(t>T1) break; if(t<T0) continue;
+      const dayBound = H%24===0;
+      out.push({t, lab:H+"h", day: dayBound?("Day "+(H/24+1)):null, midnight:dayBound});
+    }
+    return out;
+  }
+  const step=6*3600e3;
   let d=new Date(T0); d.setMinutes(0,0,0); d.setHours(Math.ceil(d.getHours()/6)*6);
   for(let t=d.getTime(); t<=T1; t+=step){
     const dt=new Date(t); let h=dt.getHours(); const ap=h<12?"a":"p"; let hh=h%12; if(hh===0)hh=12;
@@ -285,6 +310,21 @@ function xTicks(){
     out.push({t, lab, day, midnight: h===0});
   }
   return out;
+}
+// clinically meaningful age boundaries that fall inside the current domain
+function ageMarkers(){
+  if(BIRTH_MS==null) return [];
+  return [{h:48,lab:"48h"},{h:72,lab:"72h"}]
+    .map(m=>({...m, t: BIRTH_MS + m.h*3600e3}))
+    .filter(m=> m.t>T0 && m.t<T1);
+}
+function ageMarkerSvg(y1, y2, topPanel){
+  return ageMarkers().map(m=>{
+    const x=xOf(m.t).toFixed(1);
+    let s=`<line x1="${x}" y1="${y1.toFixed(1)}" x2="${x}" y2="${y2.toFixed(1)}" stroke="var(--axis)" stroke-width="1.5" opacity="0.6"/>`;
+    if(topPanel) s+=`<text x="${(xOf(m.t)+4).toFixed(1)}" y="${(y1+10).toFixed(1)}" font-size="9.5" fill="var(--muted)" font-weight="600">${m.lab}</text>`;
+    return s;
+  }).join("");
 }
 
 // Build one panel svg. opts: {h, y0, y1, ticks:[], fmtY, title, drawFn, showX}
@@ -361,7 +401,7 @@ function renderTiles(){
   }
   const tiles=[
     {lab:"Current GIR", val:`${g.toFixed(1)} <small>mg/kg/min</small>`, meta: g>CONFIG.girHighSupport?"high support (&gt;8)":"in typical range"},
-    {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—", meta: lastBg?atTxt(lastBg):"", extra:bgDelta},
+    {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—", meta: lastBg?(atTxt(lastBg)+(BIRTH_MS!=null?` · ${ageLabel(tof(lastBg))}`:'')):"", extra:bgDelta},
     {lab:"IV drip", val:`D${last.dex} <small>@ ${last.iv} mL/hr</small>`, meta:`${ivGramsPerHr(last).toFixed(1)} g dextrose/hr`},
     {lab:"Latest feed", val:`${last.ml||0} <small>mL</small>`, meta:`${feedCarbG(last).toFixed(1)} g carb · ${Math.round(feedKcal(last))} kcal`}
   ];
@@ -374,20 +414,35 @@ function renderTimeline(){
   // Panel 1 — Blood glucose
   const bgRows=DATA.filter(r=>r.bg!=null);
   const bgVals=bgRows.map(r=>r.bg);
-  const bgMin=Math.min(45, ...bgVals)-5, bgMax=Math.max(70, ...bgVals)+5;
+  const anyPost48 = BIRTH_MS!=null && DATA.some(r=>hoursOfLife(tof(r))>48);
+  const bgMin=Math.min(45, ...bgVals)-5, bgMax=Math.max(anyPost48?80:66, ...bgVals.map(v=>v+8));
   document.getElementById("p_bg").innerHTML='';
   panel(document.getElementById("p_bg"), {
     h:150, y0:bgMin, y1:bgMax, ticks:niceTicks(bgMin,bgMax,4), title:"Blood glucose (mg/dL)",
     aria:"Blood glucose over time in mg per deciliter",
-    drawFn:(yOf)=>{
+    drawFn:(yOf, plotH, PT)=>{
       let s="";
-      // weaning-trigger reference marks (why the drip did/didn't wean) — faint, labelled
-      [[50,"wean 0.5 →"],[60,"wean 1.0 →"]].forEach(([v,lab])=>{
-        if(v>=bgMin&&v<=bgMax){ const y=yOf(v);
-          s+=`<line x1="${ML}" y1="${y.toFixed(1)}" x2="${VBW-MR}" y2="${y.toFixed(1)}" stroke="var(--axis)" stroke-width="1" opacity="0.55"/>`;
-          s+=`<text x="${VBW-MR}" y="${(y-3).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--muted)">BG&gt;${v} · ${lab}</text>`;
-        }
-      });
+      // age boundary verticals (48h / 72h of life), labelled on this top panel
+      s+=ageMarkerSvg(PT, PT+plotH, true);
+      // weaning-trigger reference marks — the rule shifts up after 48h of age
+      const split = BIRTH_MS!=null ? Math.min(VBW-MR, Math.max(ML, xOf(BIRTH_MS+48*3600e3))) : ML;
+      function wline(v,lab,x1,x2){
+        if(v<bgMin||v>bgMax||x2-x1<3) return "";
+        const y=yOf(v);
+        return `<line x1="${x1.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--axis)" stroke-width="1" opacity="0.5"/>`+
+               `<text x="${(x2-2).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--muted)">${lab}</text>`;
+      }
+      if(BIRTH_MS!=null && split>ML+2){                      // pre-48h region → early rule
+        s+=wline(50,"BG&gt;50 · wean 0.5",ML,split);
+        s+=wline(60,"BG&gt;60 · wean 1.0",ML,split);
+      }
+      if(BIRTH_MS==null){                                    // no birth time → early rule across
+        s+=wline(50,"BG&gt;50 · wean 0.5",ML,VBW-MR);
+        s+=wline(60,"BG&gt;60 · wean 1.0",ML,VBW-MR);
+      } else if(split<VBW-MR-2){                              // post-48h region → later rule
+        s+=wline(65,"BG&gt;65 · wean 0.5",split,VBW-MR);
+        s+=wline(75,"BG&gt;75 · wean 1.0",split,VBW-MR);
+      }
       const pts=bgRows.map(r=>[xOf(tof(r)), yOf(r.bg)]);
       s+=line(pts,"var(--s1)",2);
       bgRows.forEach(r=>{ s+=dot(xOf(tof(r)),yOf(r.bg),"var(--s1)"); });
@@ -407,7 +462,7 @@ function renderTimeline(){
     h:130, y0:gMinC, y1:gMax, ticks:niceTicks(gMinC,gMax,4), title:"GIR (mg/kg/min)",
     aria:"Glucose infusion rate over time, mg per kg per minute, as a step line",
     drawFn:(yOf,plotH,PT)=>{
-      let s="";
+      let s=ageMarkerSvg(PT, PT+plotH, false);
       // "high support" band > 8
       if(CONFIG.girHighSupport<gMax){ const yb=yOf(CONFIG.girHighSupport);
         s+=`<rect x="${ML}" y="${PT}" width="${VBW-ML-MR}" height="${(yb-PT).toFixed(1)}" fill="var(--band)"/>`;
@@ -431,7 +486,7 @@ function renderTimeline(){
     h:158, y0:0, y1:mlMax, ticks:niceTicks(0,mlMax,4), title:"Intake", showX:true,
     fmtY:v=>v, aria:"Formula feed volume in milliliters as bars over time",
     drawFn:(yOf,plotH,PT)=>{
-      let s="";
+      let s=ageMarkerSvg(PT, PT+plotH, false);
       const bw=14;
       DATA.forEach(r=>{
         if(!r.ml) return;
@@ -560,10 +615,12 @@ function renderFluid(){
 }
 
 function renderTable(){
-  let h=`<thead><tr><th>Date · time</th><th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Carb g</th><th>kcal</th></tr></thead><tbody>`;
+  const ageCol = BIRTH_MS!=null;
+  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Carb g</th><th>kcal</th></tr></thead><tbody>`;
   DATA.forEach(r=>{
     const dt=new Date(tof(r));
     h+=`<tr><td>${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td>`+
+       (ageCol?`<td>${hoursOfLife(tof(r)).toFixed(0)}h</td>`:'')+
        `<td class="${r.bg==null?'pending':''}">${r.bg==null?'—':r.bg}</td>`+
        `<td>D${r.dex}</td><td>${r.iv}</td><td>${gir(r).toFixed(1)}</td>`+
        `<td>${r.ml||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td></tr>`;
@@ -587,7 +644,8 @@ function initHover(){
     if(!best||bd>60){ xhair.style.opacity=0; tip.style.opacity=0; return; }
     xhair.style.opacity=1; xhair.style.left=best.rx+"px";
     const r=best.r; const dt=new Date(tof(r));
-    tip.innerHTML=`<div class="tt">${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</div>`+
+    const ageStr = BIRTH_MS!=null ? ` · ${ageLabel(tof(r))}` : "";
+    tip.innerHTML=`<div class="tt">${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}${ageStr}</div>`+
       `<div class="row"><span><span class="dot" style="background:var(--s1)"></span>Blood sugar</span><b>${r.bg==null?'—':r.bg+' mg/dL'}</b></div>`+
       `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>GIR</span><b>${gir(r).toFixed(1)}</b></div>`+
       `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>Drip</span><b>D${r.dex} @ ${r.iv}</b></div>`+
@@ -631,6 +689,15 @@ function initForm(){
   });
 }
 
+/* ---- x-axis mode ---- */
+function initAxToggle(){
+  document.querySelectorAll(".seg").forEach(b=>b.addEventListener("click",()=>{
+    AXMODE=b.dataset.mode;
+    document.querySelectorAll(".seg").forEach(x=>x.classList.toggle("on", x.dataset.mode===AXMODE));
+    renderAll();
+  }));
+}
+
 /* ---- theme ---- */
 function initTheme(){
   document.getElementById("themeBtn").addEventListener("click",()=>{
@@ -648,8 +715,10 @@ function renderAll(){
 }
 
 document.getElementById("disc").innerHTML =
-  `Weight <b>10 lb 2 oz (4.59 kg)</b>. Personal tracking aid — not medical advice.`;
+  `Weight <b>10 lb 2 oz (4.59 kg)</b>` +
+  (BIRTH_MS!=null ? ` · born <b>${new Date(BIRTH_MS).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</b>` : ``) +
+  `. Personal tracking aid — not medical advice.`;
 document.getElementById("wTxt").textContent="4.59 kg (10 lb 2 oz)";
 rebuild(); setDomain();
-renderAll(); initHover(); initForm(); initTheme();
+renderAll(); initHover(); initForm(); initTheme(); initAxToggle();
 </script>
