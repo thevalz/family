@@ -1,0 +1,88 @@
+# Newborn Glucose Tracking
+
+A small, self-contained tool to understand the relationship between **IV dextrose**,
+**formula feeds**, and **blood sugar** over time for a newborn being treated for
+hypoglycemia in the NICU — and to watch the dextrose drip being weaned as he takes
+over on his own.
+
+This is **not** a "blood sugar below the danger line" chart. It's an intake ↔ response
+picture: how much glucose is going in (IV + feeds), how hard the drip is working (GIR),
+and how his sugar responds.
+
+> Personal tracking aid — **not medical advice.** The NICU team's readings and orders
+> are always the authority.
+
+## Files
+
+| File | What it is |
+|---|---|
+| [`tracker.html`](tracker.html) | The tool. Open it in any browser — no install, works offline. Charts, a full data table, and a form to log new readings. |
+| `README.md` | This page. |
+
+Open `tracker.html` by double-clicking it, or view it as a live page on your phone.
+
+## The baby
+
+- Birth weight **10 lb 2 oz = 4.59 kg** (large for gestational age).
+- Being fed formula while on a continuous **D20** (20% dextrose) IV drip.
+
+Weight drives every GIR number, so it's the one constant at the top of the file.
+
+## The measures (and where they come from)
+
+**GIR — Glucose Infusion Rate** — the number the NICU titrates, in mg/kg/min:
+
+```
+GIR = (%dextrose × IV rate mL/hr) / (6 × weight kg)
+```
+
+At 4.59 kg: **D20 @ 13 mL/hr = 9.4**, **D20 @ 12 mL/hr = 8.7 mg/kg/min**.
+Source: Brigham & Women's / CWN "WNH G.1" neonatal glucose pathway (referencing
+Chowning & Adamkin, *J Perinatol* 2015).
+
+**Weaning the drip** — the pathway weans *in GIR units*, gated by blood sugar
+(first 48h): wean GIR by **0.5 if BG > 50**, by **1.0 if BG > 60**. A GIR above
+**~8** is considered high support. He's above it — which is the quantitative way of
+seeing that he genuinely needs the drip right now, and why weaning is gradual.
+
+**The fluid budget** — total intake (IV + feeds) is capped near **100 mL/kg/day**
+(~459 mL/day for him). This is *why* the drip must come down as feeds go up: every mL
+of formula he tolerates buys back a mL of IV dextrose — as long as his sugar holds.
+Source: Giouleka et al., *Children* 2023 (guideline comparison).
+
+**Formula's contribution** — feed volume × the formula's carbohydrate per 100 mL gives
+the glucose from feeds. Fat and protein feed the gluconeogenesis machinery that steadies
+his sugar between feeds. The formula profile is a single editable block in `tracker.html`
+— swap in the real product's label numbers to make the nutrition view exact.
+
+## How to read the charts
+
+- **How it all moves together** — one shared time axis; read straight down a moment to
+  see BG, GIR, and the feed at that time. **Good looks like:** sugars holding steady
+  while the GIR step-line drops and the feed bars climb.
+- **Total glucose delivered** — cumulative grams from the IV vs from feeds. Watch the
+  formula band steepen as he takes over.
+- **Formula nutrition** — each feed broken into carbohydrate / fat / protein.
+- **Fluid budget** — daily IV + feed volume against the ~100 mL/kg/day cap.
+
+## Logging new readings
+
+Two ways, use whichever is easier in the moment:
+
+1. **In the page (fastest at the bedside).** Fill the *Add a reading* form — date, time,
+   blood sugar, formula mL, dextrose %, IV rate. It saves to that device instantly and
+   redraws every chart. Your phone remembers entries between visits.
+2. **In the file (permanent, kept in git).** Add one line to the `READINGS` list near the
+   top of `tracker.html`:
+   ```js
+   { d:"2026-07-06", t:"05:30", dex:20, iv:12, bg:58, ml:25 },
+   ```
+   Use `bg:null` when a sugar wasn't measured. The **Export rows** button copies your
+   device-entered readings in exactly this format to paste in.
+
+## Sources
+
+Provided by the family:
+- Brigham & Women's Hospital / CWN **"WNH G.1" Neonatal Glucose** clinical pathway (GIR formula, weaning rule).
+- Giouleka S. et al. *Diagnosis and Management of Neonatal Hypoglycemia: A Comprehensive Review of Guidelines.* **Children** 2023;10:1220.
+- Rozance P.J., Hay W.W. *New approaches to management of neonatal hypoglycemia.* **Matern Health Neonatol Perinatol** 2016;2:3.
