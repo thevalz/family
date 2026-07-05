@@ -94,6 +94,32 @@
   .pill.flat { color:var(--ink-2);    background:transparent; }
   .pill .ar { font-size:12px; }
 
+  /* layperson framing: status banner, plain intro, progress meter, chart captions */
+  .statusbanner { display:flex; align-items:center; gap:9px; margin:2px 0 12px; padding:10px 13px;
+    border:1px solid var(--border); border-left-width:4px; border-radius:11px; font-size:14px; font-weight:600; }
+  .statusbanner .ic { font-size:15px; flex:none; }
+  .statusbanner.good { border-left-color:var(--good); color:var(--good);
+    background:color-mix(in srgb, var(--good) 7%, var(--surface)); }
+  .statusbanner.warn { border-left-color:var(--warning); color:var(--warn-ink);
+    background:color-mix(in srgb, var(--warning) 9%, var(--surface)); }
+  .statusbanner.flat { border-left-color:var(--axis); color:var(--ink-2); background:var(--surface); }
+  .intro { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; margin:0 0 14px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
+  .intro h3 { margin:0 0 6px; font-size:14px; color:var(--ink); }
+  .intro p { margin:0 0 8px; }
+  .intro p:last-child { margin:0; }
+  .intro b { color:var(--ink); }
+  .progress { margin-top:12px; }
+  .progress .ptrack { height:9px; border-radius:999px; background:var(--grid); overflow:hidden; }
+  .progress .pfill { height:100%; border-radius:999px; background:var(--s2); transition:width .3s; }
+  .progress .plabel { font-size:12px; color:var(--ink-2); margin-top:6px; }
+  .progress .plabel b { color:var(--ink); }
+  .goodnote { display:block; font-size:12.5px; color:var(--ink-2); margin:-6px 0 12px; }
+  .goodnote .ck { color:var(--good); font-weight:700; }
+  .viewtoggle { margin:20px 0 0; }
+  #detailNote { font-size:12.5px; color:var(--muted); margin:6px 0 0; }
+  abbr[title] { text-decoration:underline dotted; text-underline-offset:2px; cursor:help; }
+
   /* chart cards */
   .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 12px 10px; margin-top:12px; }
   #timelineCard { position:relative; }   /* positioning context for the crosshair + tooltip */
@@ -179,11 +205,36 @@
   </div>
   <p class="disc" id="disc"></p>
 
+  <div class="statusbanner flat" id="statusBanner" role="status"></div>
+
+  <div class="intro">
+    <h3>What you're looking at</h3>
+    <p>Soon after birth his blood sugar was low, so he's on an <b>IV drip</b> that feeds sugar
+      straight into his blood while he learns to keep it up on his own through milk feeds.
+      This page follows three things side by side: his <b>blood sugar</b>, how hard the drip is
+      working (the <abbr title="Glucose Infusion Rate — how much sugar the drip delivers for his size">GIR</abbr>),
+      and how much <b>milk</b> he's taking.</p>
+    <p>The plan is to slowly turn the drip down — to <b>wean</b> it — as his feeds take over,
+      without letting his sugar dip too low. <span class="ck" style="color:var(--good);font-weight:700">✓ Good progress looks like:</span>
+      steady blood sugar while the drip steps down and the feeds climb.</p>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <details>
+    <summary>Words explained</summary>
+    <p><b>Blood sugar (glucose)</b> — how much sugar is in his blood, measured in <b>mg/dL</b>. Too low is the problem being managed.</p>
+    <p><b>GIR (glucose infusion rate)</b> — how much sugar the IV drip delivers for his body size, in mg/kg/min. Think of it as <i>how hard the drip is working</i>. The goal is to bring it down to <b>zero</b> (off the drip).</p>
+    <p><b>Dextrose / “D20”</b> — the sugar dissolved in the IV fluid. “D20” means 20% dextrose. <b>IV rate</b> is how fast that fluid runs, in mL/hour.</p>
+    <p><b>Fortification (cal/oz)</b> — how calorie-rich his milk is made; 24 cal/oz is richer than 20. <b>Breast milk</b> is added alongside the formula.</p>
+    <p><b>Weaning</b> — slowly turning the drip down as his own feeds keep his sugar up. <b>“High support”</b> — a GIR above about 8, meaning he's leaning on the drip a lot.</p>
+  </details>
+
   <div class="tiles" id="tiles"></div>
 
   <!-- ===================== TIMELINE (Approaches A+B+C, shared time axis) ===================== -->
   <h2>How it all moves together</h2>
   <p class="h2note">One shared time axis. Read straight down a moment to see his sugar, how hard the drip is working (GIR), and what's going in. Hover / tap for exact values.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> his blood sugar holding steady in the green band while the GIR line steps down toward zero and the feed bars grow.</p>
   <div class="axtoggle" role="group" aria-label="Horizontal axis mode">
     <button class="seg on" data-mode="clock" type="button">Clock time</button>
     <button class="seg" data-mode="age" type="button">Hours of life</button>
@@ -196,23 +247,33 @@
     <div class="panel" id="p_intake"></div>
   </div>
 
+  <div class="viewtoggle">
+    <button type="button" class="btn ghost" id="detailToggle" aria-expanded="false">Show the detailed charts ▾</button>
+    <p id="detailNote">Three deeper views for the curious: total glucose delivered, the nutrition in each feed, and the daily fluid budget.</p>
+  </div>
+
+  <div id="detailed" hidden>
   <!-- ===================== CUMULATIVE (Approach C) ===================== -->
   <h2>Total glucose delivered — is he catching up on his own?</h2>
   <p class="h2note">Running total of grams of glucose in. The IV band is what the drip has given; the formula band is the glucose from his feeds. Watch the formula band steepen as he takes over.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> the formula band getting steeper — more of his sugar coming from feeds, less from the drip.</p>
   <div class="legend" id="cumLegend"></div>
   <div class="card"><div class="panel" id="p_cum"></div></div>
 
   <!-- ===================== NUTRITION (Approach D) ===================== -->
   <h2>Formula nutrition — what each feed brings</h2>
   <p class="h2note" id="nutNote"></p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> taller bars over time as he tolerates bigger, richer feeds.</p>
   <div class="legend" id="nutLegend"></div>
   <div class="card"><div class="panel" id="p_nut"></div></div>
 
   <!-- ===================== FLUID BUDGET (Approach E) ===================== -->
   <h2>Fluid budget — why the drip has to come down</h2>
   <p class="h2note">Total fluid (IV + feeds) is capped near <b id="capTxt"></b> per day. Every mL of formula he tolerates buys back a mL of IV dextrose — so as feeds climb, the drip must fall.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> the green IV part shrinking and the feed part growing, staying under the cap line.</p>
   <div class="legend" id="fluidLegend"></div>
   <div class="card"><div class="panel" id="p_fluid"></div></div>
+  </div>
 
   <!-- ===================== DATA + FORM ===================== -->
   <h2>Every reading</h2>
@@ -535,6 +596,51 @@ function renderTiles(){
 }
 function atTxt(r){ const dt=new Date(tof(r)); return dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
 
+// Plain-language headline status, derived from the same trend logic as the tiles.
+function renderStatus(){
+  const el=document.getElementById("statusBanner"); if(!el) return;
+  const last=DATA[DATA.length-1];
+  if(!last){ el.className="statusbanner flat"; el.innerHTML=""; return; }
+  const withBg=DATA.filter(r=>r.bg!=null);
+  const lastBg=withBg[withBg.length-1];
+  const g=gir(last);
+  let gPrev=null; for(let i=DATA.length-2;i>=0;i--){ const gi=gir(DATA[i]); if(Math.abs(gi-g)>0.1){gPrev=gi;break;} }
+  const weaning=gPrev!=null && g<gPrev-0.05, girUp=gPrev!=null && g>gPrev+0.05;
+  const bgLow = lastBg && lastBg.bg < bgLowLine(tof(lastBg));
+  let cls,ic,msg;
+  if(bgLow){
+    cls="warn"; ic="!";
+    msg=`Keep an eye out — his last measured sugar (<b>${lastBg.bg}</b>) was below the target line. The drip is there to catch it.`;
+  } else if(girUp){
+    cls="warn"; ic="!";
+    msg=`He needed a little more help — the drip went up at the last change.`;
+  } else {
+    cls="good"; ic="✓";
+    const bgPart = lastBg ? `blood sugar in the target range` : `feeds going in`;
+    msg=`Good progress — ${bgPart} and ${weaning?`the drip is weaning`:`the drip is holding steady`}.`;
+  }
+  el.className="statusbanner "+cls;
+  el.innerHTML=`<span class="ic" aria-hidden="true">${ic}</span><span>${msg}</span>`;
+}
+
+// "Off the drip" progress: how far GIR has come down from its peak toward zero.
+function renderProgress(){
+  const el=document.getElementById("progress"); if(!el) return;
+  const peak=Math.max(...DATA.map(gir)), cur=gir(DATA[DATA.length-1]);
+  if(!(peak>0)){ el.innerHTML=""; return; }
+  const pct=Math.max(0,Math.min(100,(peak-cur)/peak*100));
+  el.innerHTML=
+    `<div class="ptrack"><div class="pfill" style="width:${pct.toFixed(0)}%"></div></div>`+
+    `<div class="plabel">Weaning progress: GIR down from a peak of <b>${peak.toFixed(1)}</b> to <b>${cur.toFixed(1)}</b> — about <b>${pct.toFixed(0)}%</b> of the way to off the drip (0).</div>`;
+}
+// narrative beats on the timeline
+function storyMarkers(){
+  const out=[];
+  const firstIv=DATA.find(r=>r.iv>0); if(firstIv) out.push({t:tof(firstIv), lab:"drip started"});
+  const firstBm=DATA.find(r=>(r.bm||0)>0); if(firstBm) out.push({t:tof(firstBm), lab:"breast milk added"});
+  return out.filter(m=> m.t>=T0 && m.t<=T1);
+}
+
 function renderTimeline(){
   // Panel 1 — Blood glucose
   const bgRows=DATA.filter(r=>r.bg!=null);
@@ -547,10 +653,17 @@ function renderTimeline(){
     aria:"Blood glucose over time in mg per deciliter",
     drawFn:(yOf, plotH, PT)=>{
       let s="";
+      // green "target zone" wash — his sugar sitting above the age-appropriate wean line = good
+      const split = BIRTH_MS!=null ? Math.min(VBW-MR, Math.max(ML, xOf(BIRTH_MS+48*3600e3))) : ML;
+      function greenBand(low,x1,x2){
+        if(x2-x1<3 || low<bgMin || low>bgMax) return "";
+        return `<rect x="${x1.toFixed(1)}" y="${PT.toFixed(1)}" width="${(x2-x1).toFixed(1)}" height="${(yOf(low)-PT).toFixed(1)}" fill="var(--good)" opacity="0.07"/>`;
+      }
+      if(BIRTH_MS==null){ s+=greenBand(50,ML,VBW-MR); }
+      else { if(split>ML+2) s+=greenBand(50,ML,split); if(split<VBW-MR-2) s+=greenBand(65,split,VBW-MR); }
+      s+=`<text x="${(ML+4).toFixed(1)}" y="${(PT+plotH-4).toFixed(1)}" font-size="9" fill="var(--good)" opacity="0.9">target zone</text>`;
       // age boundary verticals (48h / 72h of life), labelled on this top panel
       s+=ageMarkerSvg(PT, PT+plotH, true);
-      // weaning-trigger reference marks — the rule shifts up after 48h of age
-      const split = BIRTH_MS!=null ? Math.min(VBW-MR, Math.max(ML, xOf(BIRTH_MS+48*3600e3))) : ML;
       function wline(v,lab,x1,x2){
         if(v<bgMin||v>bgMax||x2-x1<3) return "";
         const y=yOf(v);
@@ -573,6 +686,12 @@ function renderTimeline(){
       bgRows.forEach(r=>{ s+=dot(xOf(tof(r)),yOf(r.bg),"var(--s1)"); });
       // label last value
       if(bgRows.length){ const r=bgRows[bgRows.length-1]; s+=`<text x="${(xOf(tof(r))-8).toFixed(1)}" y="${(yOf(r.bg)-8).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="var(--ink)">${r.bg}</text>`; }
+      // narrative beats: drip started, breast milk added
+      storyMarkers().forEach(m=>{
+        const x=xOf(m.t), near=x>VBW-95;
+        s+=`<line x1="${x.toFixed(1)}" y1="${PT.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(PT+plotH).toFixed(1)}" stroke="var(--s6)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>`;
+        s+=`<text x="${(near?x-3:x+3).toFixed(1)}" y="${(PT+plotH-14).toFixed(1)}" text-anchor="${near?'end':'start'}" font-size="9" fill="var(--s6)">${m.lab}</text>`;
+      });
       return s;
     }
   });
@@ -588,12 +707,16 @@ function renderTimeline(){
     aria:"Glucose infusion rate over time, mg per kg per minute, as a step line",
     drawFn:(yOf,plotH,PT)=>{
       let s=ageMarkerSvg(PT, PT+plotH, false);
-      // "high support" band > 8
+      // "high support" band > 8 (needs a lot of help)
       if(CONFIG.girHighSupport<gMax){ const yb=yOf(CONFIG.girHighSupport);
         s+=`<rect x="${ML}" y="${PT}" width="${VBW-ML-MR}" height="${(yb-PT).toFixed(1)}" fill="var(--band)"/>`;
         s+=`<line x1="${ML}" y1="${yb.toFixed(1)}" x2="${VBW-MR}" y2="${yb.toFixed(1)}" stroke="var(--axis)" stroke-width="1" opacity="0.55"/>`;
-        s+=`<text x="${ML+4}" y="${(yb-4).toFixed(1)}" font-size="9.5" fill="var(--muted)">high support &gt;8</text>`;
+        s+=`<text x="${ML+4}" y="${(yb-4).toFixed(1)}" font-size="9.5" fill="var(--muted)">needs a lot of help (&gt;8)</text>`;
       }
+      // target line: the finish line is 0 — off the drip
+      const yGoal=yOf(0);
+      s+=`<line x1="${ML}" y1="${yGoal.toFixed(1)}" x2="${VBW-MR}" y2="${yGoal.toFixed(1)}" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      s+=`<text x="${(VBW-MR-2).toFixed(1)}" y="${(yGoal-4).toFixed(1)}" text-anchor="end" font-size="9.5" font-weight="600" fill="var(--good)">Goal · off the drip (0)</text>`;
       s+=`<path d="${stepPath(DATA,gir,yOf)}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
       DATA.forEach(r=>{ s+=dot(xOf(tof(r)),yOf(gir(r)),"var(--s2)",3); });
       const lr=DATA[DATA.length-1];
@@ -602,7 +725,7 @@ function renderTimeline(){
     }
   });
   document.getElementById("p_gir").insertAdjacentHTML("afterbegin",
-    `<div class="plab"><span class="dot" style="background:var(--s2)"></span>GIR — how hard the drip is working <span class="cur">mg/kg/min</span></div>`);
+    `<div class="plab"><span class="dot" style="background:var(--s2)"></span>GIR — how hard the drip is working · lower is better <span class="cur">mg/kg/min</span></div>`);
 
   // Panel 3 — Intake (formula + breast milk volume per feed, stacked)
   const mlMax=Math.max(30, ...DATA.map(feedVol))+4;
@@ -758,7 +881,7 @@ function editRowHtml(r, ageCol){
 }
 function renderTable(){
   const ageCol = BIRTH_MS!=null;
-  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>BG</th><th>Dextrose</th><th>IV mL/hr</th><th>GIR</th><th>Formula mL</th><th>Fort</th><th>BM mL</th><th>Carb g</th><th>kcal</th><th></th></tr></thead><tbody>`;
+  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>Blood sugar (mg/dL)</th><th>Dextrose</th><th>IV rate (mL/hr)</th><th>GIR (mg/kg/min)</th><th>Formula (mL)</th><th>Fortification (cal/oz)</th><th>Breast milk (mL)</th><th>Carbs (g)</th><th>Calories</th><th></th></tr></thead><tbody>`;
   DATA.forEach(r=>{
     if(EDITING===r._id){ h+=editRowHtml(r, ageCol); return; }
     const dt=new Date(tof(r));
@@ -878,6 +1001,16 @@ function initForm(){
   });
 }
 
+/* ---- Simple / Detailed view toggle ---- */
+function initViewToggle(){
+  const btn=document.getElementById("detailToggle"), box=document.getElementById("detailed");
+  btn.addEventListener("click",()=>{
+    const show = box.hasAttribute("hidden");
+    if(show){ box.removeAttribute("hidden"); btn.textContent="Hide the detailed charts ▴"; btn.setAttribute("aria-expanded","true"); }
+    else { box.setAttribute("hidden",""); btn.textContent="Show the detailed charts ▾"; btn.setAttribute("aria-expanded","false"); }
+  });
+}
+
 /* ---- x-axis mode ---- */
 function initAxToggle(){
   document.querySelectorAll(".seg").forEach(b=>b.addEventListener("click",()=>{
@@ -900,6 +1033,7 @@ function initTheme(){
 
 function renderAll(){
   rebuild(); setDomain();
+  renderStatus(); renderProgress();
   renderTiles(); renderTimeline(); renderCumulative(); renderNutrition(); renderFluid(); renderTable();
 }
 
@@ -909,7 +1043,7 @@ document.getElementById("disc").innerHTML =
   `. Personal tracking aid — not medical advice.`;
 document.getElementById("wTxt").textContent="4.59 kg (10 lb 2 oz)";
 rebuild(); setDomain();
-renderAll(); initHover(); initForm(); initTheme(); initAxToggle(); initTable();
+renderAll(); initHover(); initForm(); initTheme(); initAxToggle(); initTable(); initViewToggle();
 
 /* PWA: register the service worker so the app installs & works offline */
 if("serviceWorker" in navigator){
