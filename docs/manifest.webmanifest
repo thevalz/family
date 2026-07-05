@@ -1,0 +1,16 @@
+{
+  "name": "Newborn Glucose Tracker",
+  "short_name": "Glucose",
+  "description": "Track a newborn's blood sugar, IV dextrose (GIR), and feeds, and watch the drip wean.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9f9f7",
+  "theme_color": "#2a78d6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

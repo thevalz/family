@@ -1,5 +1,13 @@
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Newborn Glucose Tracker</title>
+<meta name="theme-color" content="#2a78d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Glucose">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   /* ============================================================= *
    *  Palette (dataviz reference instance) — roles, not raw hex.   *
@@ -741,4 +749,9 @@ document.getElementById("disc").innerHTML =
 document.getElementById("wTxt").textContent="4.59 kg (10 lb 2 oz)";
 rebuild(); setDomain();
 renderAll(); initHover(); initForm(); initTheme(); initAxToggle();
+
+/* PWA: register the service worker so the app installs & works offline */
+if("serviceWorker" in navigator){
+  addEventListener("load", ()=> navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
 </script>

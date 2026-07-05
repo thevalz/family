@@ -12,19 +12,34 @@ and how his sugar responds.
 > Personal tracking aid — **not medical advice.** The NICU team's readings and orders
 > are always the authority.
 
+## Install it on your iPad (or phone) as an app
+
+This folder is a **GitHub Pages** site and an installable **PWA**. Once Pages is enabled
+(see below), open the published URL in Safari, then **Share → Add to Home Screen**. It
+gets the blood-drop icon, opens full-screen with no browser chrome, and works offline.
+
+**Enabling GitHub Pages (one-time, in the GitHub website):**
+1. Repo **Settings → Pages**.
+2. Under **Build and deployment → Source**, pick **Deploy from a branch**.
+3. Branch: **`claude/family-empty-repo-prp7O`**, folder: **`/docs`** → **Save**.
+4. Wait ~1 minute; the published URL will be **https://thevalz.github.io/family/**.
+
+> Privacy note: on a public repo this URL (and the sugar data embedded in it) is publicly
+> reachable by anyone who has the link. Keep the repo private + a paid GitHub plan, or accept
+> that exposure, per your preference.
+
 ## Files
 
 | File | What it is |
 |---|---|
-| [`tracker.html`](tracker.html) | The tool. Open it in any browser — no install, works offline. Charts, a full data table, and a form to log new readings. |
-| [`readings.csv`](readings.csv) | Plain-text master log of every measurement (open in Excel / Sheets): `date, time, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml, fortification_kcal_oz, breast_milk_ml`. |
+| [`index.html`](index.html) | The app. Open in any browser — no install needed; charts, a full data table, and a form to log readings. |
+| [`readings.csv`](readings.csv) | Plain-text master log (open in Excel / Sheets): `date, time, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml, fortification_kcal_oz, breast_milk_ml`. |
+| `manifest.webmanifest`, `sw.js`, `icon-*.png` | PWA plumbing — app name, icon, and offline service worker. |
 | `README.md` | This page. |
 
-The tracker renders from an embedded `READINGS` array (a static page can't read a local
-CSV file directly), so `readings.csv` and that array are the same data kept in sync — edit
-the CSV to confirm/correct values and the array is updated to match.
-
-Open `tracker.html` by double-clicking it, or view it as a live page on your phone.
+The app renders from an embedded `READINGS` array (a static page can't read a local CSV
+directly), so `readings.csv` and that array are the same data kept in sync — edit the CSV
+to confirm/correct values and the array is updated to match.
 
 ## The baby
 
@@ -33,7 +48,7 @@ Open `tracker.html` by double-clicking it, or view it as a live page on your pho
 - Fed **Enfamil Gentlease** (fortified to 20, then 24 kcal/oz), with **breast milk**
   being introduced, while on a continuous **D20** (20% dextrose) IV drip.
 
-Weight and birth time are the two constants at the top of `tracker.html`. Weight drives
+Weight and birth time are the two constants at the top of `index.html`. Weight drives
 every GIR number; birth time drives the **hours-of-life** axis — toggle the timeline
 between **Clock time** and **Hours of life**, and the clinically meaningful **48h** and
 **72h** boundaries show as vertical marks. (48h is when the weaning thresholds step up
@@ -63,7 +78,7 @@ Source: Giouleka et al., *Children* 2023 (guideline comparison).
 
 **Formula's contribution** — feed volume × the formula's carbohydrate per 100 mL gives
 the glucose from feeds. Fat and protein feed the gluconeogenesis machinery that steadies
-his sugar between feeds. The formula profile is a single editable block in `tracker.html`
+his sugar between feeds. The formula profile is a single editable block in `index.html`
 — swap in the real product's label numbers to make the nutrition view exact.
 
 ## How to read the charts
@@ -84,12 +99,13 @@ Two ways, use whichever is easier in the moment:
    blood sugar, formula mL, dextrose %, IV rate. It saves to that device instantly and
    redraws every chart. Your phone remembers entries between visits.
 2. **In the file (permanent, kept in git).** Add one line to the `READINGS` list near the
-   top of `tracker.html`:
+   top of `index.html`:
    ```js
-   { d:"2026-07-06", t:"05:30", dex:20, iv:12, bg:58, ml:25 },
+   { d:"2026-07-06", t:"05:30", dex:20, iv:12, bg:58, ml:25, fort:24, bm:10 },
    ```
-   Use `bg:null` when a sugar wasn't measured. The **Export rows** button copies your
-   device-entered readings in exactly this format to paste in.
+   `bg:null` when a sugar wasn't measured; `fort` is fortification (kcal/oz) and `bm` is
+   breast milk (mL). The **Export rows** button copies your device-entered readings in
+   exactly this format to paste in.
 
 ## Sources
 
