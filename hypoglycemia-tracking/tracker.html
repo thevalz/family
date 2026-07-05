@@ -216,14 +216,16 @@ const CONFIG = {
   birth: "2026-07-02T08:18:00",    // date & time of birth → drives "hours of life"
   fluidCapPerKgPerDay: 100,        // mL/kg/day ceiling (IV + oral)
   girHighSupport: 8,               // mg/kg/min — "high support" reference
-  // Formula nutrition per 100 mL. PLACEHOLDER = standard 20 kcal/oz term formula.
-  // Replace with the real product's label numbers.
+  // Formula nutrition per 100 mL. Enfamil Gentlease, fortified to 24 kcal/oz.
+  // Base Gentlease per 100 Cal = 2.3 g protein / 5.3 g fat / 10.8 g carb, scaled to
+  // 24 kcal/oz (81 kcal/100 mL) assuming concentration-style fortification (macros scale
+  // proportionally). If fortified with a specific fat/carb module instead, adjust the split.
   formula: {
-    name: "Standard 20 kcal/oz formula (placeholder)",
-    kcalPer100: 67,
-    carbPer100: 7.3,   // g — the glucose-source number
-    fatPer100: 3.6,    // g
-    proteinPer100: 1.4 // g
+    name: "Enfamil Gentlease, fortified to 24 kcal/oz",
+    kcalPer100: 81,
+    carbPer100: 8.8,   // g — the glucose-source number
+    fatPer100: 4.3,    // g
+    proteinPer100: 1.9 // g
   }
 };
 
@@ -233,16 +235,16 @@ const CONFIG = {
  *  === READINGS ===                                                 *
  * ================================================================= */
 const READINGS = [
-  { d:"2026-07-04", t:"06:00", dex:20, iv:13, bg:68,   ml:15 },
-  { d:"2026-07-04", t:"11:00", dex:20, iv:13, bg:50,   ml:15 },
-  { d:"2026-07-04", t:"14:15", dex:20, iv:13, bg:60,   ml:15 },
-  { d:"2026-07-04", t:"20:20", dex:20, iv:13, bg:56,   ml:15 },
-  { d:"2026-07-05", t:"02:30", dex:20, iv:13, bg:60,   ml:15 },
-  { d:"2026-07-05", t:"08:30", dex:20, iv:13, bg:52,   ml:15 },
-  { d:"2026-07-05", t:"11:30", dex:20, iv:13, bg:null, ml:20 },
-  { d:"2026-07-05", t:"17:30", dex:20, iv:12, bg:61,   ml:20 },
-  { d:"2026-07-05", t:"20:30", dex:20, iv:12, bg:null, ml:25 },
-  { d:"2026-07-05", t:"23:30", dex:20, iv:13, bg:null, ml:25 }
+  { d:"2026-07-03", t:"06:00", dex:20, iv:13, bg:68,   ml:15 },
+  { d:"2026-07-03", t:"11:00", dex:20, iv:13, bg:50,   ml:15 },
+  { d:"2026-07-03", t:"14:15", dex:20, iv:13, bg:60,   ml:15 },
+  { d:"2026-07-03", t:"20:20", dex:20, iv:13, bg:56,   ml:15 },
+  { d:"2026-07-04", t:"02:30", dex:20, iv:13, bg:60,   ml:15 },
+  { d:"2026-07-04", t:"08:30", dex:20, iv:13, bg:52,   ml:15 },
+  { d:"2026-07-04", t:"11:30", dex:20, iv:13, bg:null, ml:20 },
+  { d:"2026-07-04", t:"17:30", dex:20, iv:12, bg:61,   ml:20 },
+  { d:"2026-07-04", t:"20:30", dex:20, iv:12, bg:null, ml:25 },
+  { d:"2026-07-04", t:"23:30", dex:20, iv:13, bg:null, ml:25 }
 ];
 /* === END READINGS === */
 
@@ -663,7 +665,7 @@ function initHover(){
 /* ---- form ---- */
 function initForm(){
   const f=document.getElementById("addForm"), msg=document.getElementById("formMsg");
-  document.getElementById("f_d").value="2026-07-06";
+  document.getElementById("f_d").value="2026-07-05";
   document.getElementById("f_dex").value=20; document.getElementById("f_iv").value=13;
   f.addEventListener("submit",e=>{
     e.preventDefault();

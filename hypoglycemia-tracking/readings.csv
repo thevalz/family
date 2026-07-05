@@ -1,0 +1,11 @@
+date,time,measurement,dextrose,iv_rate_ml_per_hr,blood_sugar_mg_dl,formula_ml
+2026-07-03,06:00,Blood Sugar,D20,13,68,15
+2026-07-03,11:00,Blood Sugar,D20,13,50,15
+2026-07-03,14:15,Blood Sugar,D20,13,60,15
+2026-07-03,20:20,Blood Sugar,D20,13,56,15
+2026-07-04,02:30,Blood Sugar,D20,13,60,15
+2026-07-04,08:30,Blood Sugar,D20,13,52,15
+2026-07-04,11:30,Blood Sugar,D20,13,n/a,20
+2026-07-04,17:30,Blood Sugar,D20,12,61,20
+2026-07-04,20:30,Blood Sugar,D20,12,pending,25
+2026-07-04,23:30,Blood Sugar,D20,13,pending,25
