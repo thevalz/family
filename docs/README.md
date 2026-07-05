@@ -107,6 +107,14 @@ Two ways, use whichever is easier in the moment:
    breast milk (mL). The **Export rows** button copies your device-entered readings in
    exactly this format to paste in.
 
+## Forecasting future performance
+
+Now that current and historical state are covered, [**`forecasting-research.md`**](forecasting-research.md)
+is a research + feasibility memo on whether we can forecast the drip-weaning
+trajectory and blood sugar — what the medical and statistical literature supports,
+and an honest verdict (short version: a rule-based GIR weaning *projection* is
+defensible; numeric blood-sugar forecasting is not, at this data density).
+
 ## Sources
 
 Provided by the family:

@@ -2,7 +2,7 @@
  * Strategy: network-first for the app shell so a fresh version loads whenever
  * online (important — the data is embedded in index.html and updated over time),
  * falling back to the cache when offline. Bump CACHE to force a refresh. */
-const CACHE = "glucose-tracker-v2";
+const CACHE = "glucose-tracker-v3";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest",
                "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
