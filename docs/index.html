@@ -94,15 +94,7 @@
   .pill.flat { color:var(--ink-2);    background:transparent; }
   .pill .ar { font-size:12px; }
 
-  /* layperson framing: status banner, plain intro, progress meter, chart captions */
-  .statusbanner { display:flex; align-items:center; gap:9px; margin:2px 0 12px; padding:10px 13px;
-    border:1px solid var(--border); border-left-width:4px; border-radius:11px; font-size:14px; font-weight:600; }
-  .statusbanner .ic { font-size:15px; flex:none; }
-  .statusbanner.good { border-left-color:var(--good); color:var(--good);
-    background:color-mix(in srgb, var(--good) 7%, var(--surface)); }
-  .statusbanner.warn { border-left-color:var(--warning); color:var(--warn-ink);
-    background:color-mix(in srgb, var(--warning) 9%, var(--surface)); }
-  .statusbanner.flat { border-left-color:var(--axis); color:var(--ink-2); background:var(--surface); }
+  /* layperson framing: plain intro, progress meter, chart captions */
   .intro { background:var(--surface); border:1px solid var(--border); border-radius:12px;
     padding:14px 16px; margin:0 0 14px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
   .intro h3 { margin:0 0 6px; font-size:14px; color:var(--ink); }
@@ -204,8 +196,6 @@
     <button class="tbtn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
   </div>
   <p class="disc" id="disc"></p>
-
-  <div class="statusbanner flat" id="statusBanner" role="status"></div>
 
   <div class="intro">
     <h3>What you're looking at</h3>
@@ -364,7 +354,12 @@ const READINGS = [
   { d:"2026-07-05", t:"11:34", dex:20, iv:10, bg:null, ml:27, fort:24, bm:5 },
   { d:"2026-07-05", t:"14:31", dex:20, iv:10, bg:61, ml:30, fort:24, bm:7 },
   { d:"2026-07-05", t:"17:30", dex:20, iv:10, bg:null, ml:35, fort:24, bm:0 },
-  { d:"2026-07-05", t:"20:30", dex:20, iv:10, bg:78, ml:35, fort:24, bm:0 }
+  { d:"2026-07-05", t:"20:30", dex:20, iv:10, bg:78, ml:35, fort:24, bm:0 },
+  { d:"2026-07-05", t:"23:30", dex:20, iv:8,  bg:null, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"02:30", dex:20, iv:8,  bg:69, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"05:30", dex:20, iv:8,  bg:null, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"08:30", dex:20, iv:8,  bg:62, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"11:30", dex:20, iv:8,  bg:null, ml:55, fort:24, bm:0 }
 ];
 /* === END READINGS === */
 
@@ -598,33 +593,6 @@ function renderTiles(){
   }).join("");
 }
 function atTxt(r){ const dt=new Date(tof(r)); return dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
-
-// Plain-language headline status, derived from the same trend logic as the tiles.
-function renderStatus(){
-  const el=document.getElementById("statusBanner"); if(!el) return;
-  const last=DATA[DATA.length-1];
-  if(!last){ el.className="statusbanner flat"; el.innerHTML=""; return; }
-  const withBg=DATA.filter(r=>r.bg!=null);
-  const lastBg=withBg[withBg.length-1];
-  const g=gir(last);
-  let gPrev=null; for(let i=DATA.length-2;i>=0;i--){ const gi=gir(DATA[i]); if(Math.abs(gi-g)>0.1){gPrev=gi;break;} }
-  const weaning=gPrev!=null && g<gPrev-0.05, girUp=gPrev!=null && g>gPrev+0.05;
-  const bgLow = lastBg && lastBg.bg < bgLowLine(tof(lastBg));
-  let cls,ic,msg;
-  if(bgLow){
-    cls="warn"; ic="!";
-    msg=`Keep an eye out — his last measured sugar (<b>${lastBg.bg}</b>) was below the target line. The drip is there to catch it.`;
-  } else if(girUp){
-    cls="warn"; ic="!";
-    msg=`He needed a little more help — the drip went up at the last change.`;
-  } else {
-    cls="good"; ic="✓";
-    const bgPart = lastBg ? `blood sugar in the target range` : `feeds going in`;
-    msg=`Good progress — ${bgPart} and ${weaning?`the drip is weaning`:`the drip is holding steady`}.`;
-  }
-  el.className="statusbanner "+cls;
-  el.innerHTML=`<span class="ic" aria-hidden="true">${ic}</span><span>${msg}</span>`;
-}
 
 // "Off the drip" progress: how far GIR has come down from its peak toward zero.
 function renderProgress(){
@@ -1036,7 +1004,7 @@ function initTheme(){
 
 function renderAll(){
   rebuild(); setDomain();
-  renderStatus(); renderProgress();
+  renderProgress();
   renderTiles(); renderTimeline(); renderCumulative(); renderNutrition(); renderFluid(); renderTable();
 }
 
