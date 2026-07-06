@@ -89,7 +89,9 @@ normally imply central access. But a randomized trial specific to *this exact si
 newborns treated for hypoglycemia — found that **20% glucose can be infused into peripheral
 veins as safely as 15%**, with no significant difference in phlebitis or cannula changes
 (121 infants, started at 8 mg/kg/min and tapered to blood sugar).[^vanhatalo] That is the
-evidence that supports running his D20 peripherally rather than placing a central line.
+evidence that supports running his D20 peripherally rather than placing a central line. A fuller
+write-up — the default rule, the trial evidence, and what it means for him — is in
+[**`iv-route-research.md`**](iv-route-research.md).
 
 ## How to read the charts
 
@@ -124,6 +126,15 @@ is a research + feasibility memo on whether we can forecast the drip-weaning
 trajectory and blood sugar — what the medical and statistical literature supports,
 and an honest verdict (short version: a rule-based GIR weaning *projection* is
 defensible; numeric blood-sugar forecasting is not, at this data density).
+
+## Peripheral vs. central IV for D20
+
+[**`iv-route-research.md`**](iv-route-research.md) answers a question the original sources
+didn't: is 20% dextrose supposed to run through a peripheral IV, or does it need a central
+line? Short version: the general rule caps peripheral dextrose at **12.5%**, but a
+randomized trial in hypoglycemic newborns found **20% glucose can be infused peripherally
+as safely as 15%** — so his peripheral D20 is an evidence-backed choice, at the cost of more
+frequent site checks and cannula changes.
 
 ## Sources
 
