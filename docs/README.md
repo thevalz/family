@@ -81,6 +81,16 @@ the glucose from feeds. Fat and protein feed the gluconeogenesis machinery that 
 his sugar between feeds. The formula profile is a single editable block in `index.html`
 — swap in the real product's label numbers to make the nutrition view exact.
 
+**Why D20 can run in a peripheral line** — the usual bedside rule is that dextrose above
+**12.5%** is too hypertonic for a peripheral vein and needs a central line (UVC/PICC),
+because hypertonic solutions can irritate the vein and cause phlebitis or thrombosis — the
+threshold on the FDA dextrose label.[^fda] His **D20** exceeds that rule, so it would
+normally imply central access. But a randomized trial specific to *this exact situation* —
+newborns treated for hypoglycemia — found that **20% glucose can be infused into peripheral
+veins as safely as 15%**, with no significant difference in phlebitis or cannula changes
+(121 infants, started at 8 mg/kg/min and tapered to blood sugar).[^vanhatalo] That is the
+evidence that supports running his D20 peripherally rather than placing a central line.
+
 ## How to read the charts
 
 - **How it all moves together** — one shared time axis; read straight down a moment to
@@ -121,3 +131,9 @@ Provided by the family:
 - Brigham & Women's Hospital / CWN **"WNH G.1" Neonatal Glucose** clinical pathway (GIR formula, weaning rule).
 - Giouleka S. et al. *Diagnosis and Management of Neonatal Hypoglycemia: A Comprehensive Review of Guidelines.* **Children** 2023;10:1220.
 - Rozance P.J., Hay W.W. *New approaches to management of neonatal hypoglycemia.* **Matern Health Neonatol Perinatol** 2016;2:3.
+
+On the peripheral-vs-central IV route for D20:
+
+[^vanhatalo]: Vanhatalo T., Tammela O. *Glucose infusions into peripheral veins in the management of neonatal hypoglycaemia — 20% instead of 15%?* **Acta Paediatr** 2010;99(3):350–353. doi:[10.1111/j.1651-2227.2009.01237.x](https://doi.org/10.1111/j.1651-2227.2009.01237.x). PMID [19397539](https://pubmed.ncbi.nlm.nih.gov/19397539/). Randomized trial, 121 hypoglycemic newborns; 20% and 15% glucose infused peripherally were equally safe (no significant difference in phlebitis or cannula-site changes). *This is the article that supports giving D20 peripherally rather than via a central line.*
+
+[^fda]: U.S. FDA. *Dextrose Injection 20%, 30%, 40%, 50% and 70% — prescribing information* (Hospira). [accessdata.fda.gov](https://www.accessdata.fda.gov/drugsatfda_docs/label/2016/018561s057,018562s056,018563s057,018564s059,019345s044lbl.pdf). States dextrose should be diluted for peripheral administration to a maximum concentration of **12.5%**; concentrations above 12.5% require a central line. Corroborated by ASHP and CHEO drug references.
