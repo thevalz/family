@@ -20,9 +20,14 @@ font is inlined as a data URI, so it works offline and anywhere).
 
 ## Look & feel
 
-"Golden-hour dusk" — earthy balloons (terracotta, ochre, sage, clay, dusty
-rose, plum) glowing like paper lanterns against a warm ground. Works in both
-light and dark themes; there's a toggle in the top-right corner.
+Realistic, glossy latex balloons (in the spirit of the Cotton launch campaign)
+across two switchable palettes — use the switch in the top-right corner to
+compare:
+
+- **Bright Sky** (default) — candy-colored balloons (red, yellow, pink, blue,
+  green, lavender) on a sunny sky-to-warm gradient.
+- **Golden Dusk** — earthy balloons (terracotta, ochre, sage, clay, dusty rose,
+  plum) glowing like paper lanterns against a warm, moody ground.
 
 ## Swapping in the real name
 
