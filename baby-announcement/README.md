@@ -1,45 +1,40 @@
-# Baby announcement — interaction study
+# Baby announcement
 
-A single, self-contained animated web page exploring how our baby-name
-announcement could feel to play with. This is a **design study**, not the
-finished page: it presents five interactive concepts side by side so we can
-react to them and pick a direction to iterate on.
+A single, self-contained animated web page announcing our baby's name — a room
+full of balloons that float up from the floor, collect at the ceiling, bump
+into each other, and scatter when you move your cursor through them.
 
 Open `index.html` in any browser — no build step, no dependencies (the display
 font is inlined as a data URI, so it works offline and anywhere).
 
-## The five ideas
+## The scene
 
-| # | Concept | Interaction |
-|---|---------|-------------|
-| 01 | **Lantern Field** | Balloons lean away from the cursor and part like a curtain, with parallax depth. |
-| 02 | **Petal Trail** | The cursor leaves a wake of warm petals that rise and fade. |
-| 03 | **The Name Plays** | The name's letters lean toward the cursor, warm and glow, then spring back. |
-| 04 | **Golden Spotlight** | A warm light travels with the cursor, revealing a hidden message. |
-| 05 | **Pop to Reveal** | Hover or tap each balloon to pop it and uncover a letter of the name. |
+- On load, the balloons start at the **bottom** of the screen.
+- Helium **buoyancy** carries them up; they collect along the top like a garland.
+- A lightweight **physics** loop keeps them from overlapping — balloons separate
+  and bounce off each other and the walls.
+- Your **cursor** pushes nearby balloons around; released, they drift back up.
 
-## Look & feel
+Balloons are rendered as realistic glossy latex (in the spirit of the Cotton
+launch campaign) — volumetric shading, a hot-spot highlight, a knot and a
+dangling string.
 
-Realistic, glossy latex balloons (in the spirit of the Cotton launch campaign)
-across two switchable palettes — use the switch in the top-right corner to
-compare:
+## Two palettes
 
-- **Bright Sky** (default) — candy-colored balloons (red, yellow, pink, blue,
-  green, lavender) on a sunny sky-to-warm gradient.
-- **Golden Dusk** — earthy balloons (terracotta, ochre, sage, clay, dusty rose,
-  plum) glowing like paper lanterns against a warm, moody ground.
+Use the switch in the top-right corner to compare:
+
+- **Bright Sky** (default) — candy-colored balloons on a sunny sky.
+- **Golden Dusk** — earthy balloons against a warm, moody ground.
+
+The choice persists across reloads.
 
 ## Swapping in the real name
 
-Everything configurable lives in one object at the top of the `<script>` in
+Everything configurable is one line at the top of the `<script>` in
 `index.html`:
 
 ```js
-const BABY = {
-  name: "Baby Valz",                  // <- the real name
-  popLetters: ["V","A","L","Z"],      // letters for the "Pop to Reveal" idea
-  spotMessage: "we already can't wait to meet you",
-};
+const BABY = { name: "Baby Valz" };   // <- the real name
 ```
 
 The name is currently a clearly-marked placeholder.
