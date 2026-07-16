@@ -1,0 +1,1042 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Newborn Glucose Tracker</title>
+<meta name="theme-color" content="#2a78d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Glucose">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  /* ============================================================= *
+   *  Palette (dataviz reference instance) — roles, not raw hex.   *
+   *  Light + dark are both selected sets, swapped in one place.   *
+   * ============================================================= */
+  :root, :root[data-theme="light"] {
+    --page:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --s1:#2a78d6;  /* blue   — blood glucose */
+    --s2:#1baf7a;  /* aqua   — GIR / IV dextrose */
+    --s3:#eda100;  /* yellow — formula / carbohydrate */
+    --s4:#4a3aa7;  /* violet — fat */
+    --s5:#e87ba4;  /* magenta— protein */
+    --s6:#0a8a3f;  /* green  — breast milk */
+    --good:#006300; --warning:#fab219; --warn-ink:#8a5b00;
+    --band: rgba(42,120,214,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181; --s6:#2cae63;
+      --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219;
+      --band: rgba(57,135,229,0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181; --s6:#2cae63;
+    --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219;
+    --band: rgba(57,135,229,0.10);
+  }
+
+  * { box-sizing:border-box; }
+  :focus-visible { outline:2px solid var(--s1); outline-offset:2px; border-radius:4px; }
+  body {
+    margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.45; -webkit-text-size-adjust:100%;
+  }
+  .wrap { max-width:760px; margin:0 auto; padding:20px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub { color:var(--ink-2); font-size:14px; margin:0 0 4px; }
+  .disc { color:var(--muted); font-size:12px; margin:8px 0 20px; }
+  h2 { font-size:15px; margin:30px 0 3px; letter-spacing:-0.005em; }
+  .h2note { color:var(--ink-2); font-size:13px; margin:0 0 12px; }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .tbtn {
+    flex:none; font:inherit; font-size:12px; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:6px 10px; cursor:pointer;
+  }
+  .tbtn:hover { color:var(--ink); }
+  .axtoggle { display:inline-flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; margin:0 0 10px; }
+  .seg { font:inherit; font-size:12.5px; padding:6px 13px; background:var(--surface); color:var(--ink-2); border:none; cursor:pointer; }
+  .seg.on { background:var(--s1); color:#fff; }
+  .seg + .seg { border-left:1px solid var(--border); }
+
+  /* stat tiles */
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:6px 0 4px; }
+  @media (max-width:560px){ .tiles{ grid-template-columns:repeat(2,1fr);} }
+  .tile { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 13px; }
+  .tile .lab { font-size:11.5px; color:var(--ink-2); margin-bottom:6px; }
+  .tile .val { font-size:26px; font-weight:600; letter-spacing:-0.02em; }
+  .tile .val small { font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; }
+  .tile .meta { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .tile .meta.caution { color:var(--warn-ink); }
+  /* primary-card trend treatment (GIR + blood sugar) */
+  .tile.trend { border-left:3px solid var(--border); }
+  .tile.trend.good { border-left-color:var(--good);
+    background:color-mix(in srgb, var(--good) 6%, var(--surface)); }
+  .tile.trend.warn { border-left-color:var(--warning);
+    background:color-mix(in srgb, var(--warning) 7%, var(--surface)); }
+  .tile.trend.flat { border-left-color:var(--axis); }
+  .pill { display:inline-flex; align-items:center; gap:4px; margin-top:6px;
+    font-size:11px; font-weight:600; line-height:1; padding:3px 7px;
+    border-radius:999px; border:1px solid var(--border); }
+  .pill.good { color:var(--good);     background:color-mix(in srgb, var(--good) 10%, transparent); }
+  .pill.warn { color:var(--warn-ink); background:color-mix(in srgb, var(--warning) 14%, transparent); }
+  .pill.flat { color:var(--ink-2);    background:transparent; }
+  .pill .ar { font-size:12px; }
+
+  /* layperson framing: plain intro, progress meter, chart captions */
+  .intro { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; margin:0 0 14px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
+  .intro h3 { margin:0 0 6px; font-size:14px; color:var(--ink); }
+  .intro p { margin:0 0 8px; }
+  .intro p:last-child { margin:0; }
+  .intro b { color:var(--ink); }
+  .progress { margin-top:12px; }
+  .progress .ptrack { height:9px; border-radius:999px; background:var(--grid); overflow:hidden; }
+  .progress .pfill { height:100%; border-radius:999px; background:var(--s2); transition:width .3s; }
+  .progress .plabel { font-size:12px; color:var(--ink-2); margin-top:6px; }
+  .progress .plabel b { color:var(--ink); }
+  .goodnote { display:block; font-size:12.5px; color:var(--ink-2); margin:-6px 0 12px; }
+  .goodnote .ck { color:var(--good); font-weight:700; }
+  .viewtoggle { margin:20px 0 0; }
+  #detailNote { font-size:12.5px; color:var(--muted); margin:6px 0 0; }
+  abbr[title] { text-decoration:underline dotted; text-underline-offset:2px; cursor:help; }
+
+  /* chart cards */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 12px 10px; margin-top:12px; }
+  #timelineCard { position:relative; }   /* positioning context for the crosshair + tooltip */
+  .panel { position:relative; }
+  .panel + .panel { margin-top:2px; }
+  .plab { font-size:12px; color:var(--ink-2); margin:2px 0 0 4px; display:flex; gap:6px; align-items:center; }
+  .plab .cur { color:var(--ink); font-weight:600; }
+  svg { display:block; width:100%; height:auto; overflow:visible; }
+  .crosshair { position:absolute; top:0; bottom:0; width:1px; background:var(--axis); pointer-events:none; opacity:0; }
+  .tip {
+    position:absolute; pointer-events:none; opacity:0; z-index:5;
+    background:var(--surface); border:1px solid var(--border); border-radius:9px;
+    padding:8px 10px; font-size:12px; color:var(--ink); min-width:130px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.14); transform:translate(-50%,0);
+  }
+  .tip .tt { font-size:11px; color:var(--muted); margin-bottom:5px; }
+  .tip .row { display:flex; justify-content:space-between; gap:14px; }
+  .tip .row span:first-child { color:var(--ink-2); display:flex; align-items:center; gap:6px; }
+  .tip b { font-weight:600; }
+  .dot { width:8px; height:8px; border-radius:50%; flex:none; display:inline-block; }
+
+  /* legend */
+  .legend { display:flex; flex-wrap:wrap; gap:14px; margin:4px 0 2px 4px; font-size:12px; color:var(--ink-2); }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .lk { width:14px; height:3px; border-radius:2px; display:inline-block; }
+
+  /* table */
+  .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:12px; margin-top:12px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; }
+  th, td { text-align:right; padding:7px 10px; white-space:nowrap; border-bottom:1px solid var(--grid); }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { color:var(--ink-2); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0; background:var(--surface); }
+  tbody tr:last-child td { border-bottom:none; }
+  td.pending { color:var(--muted); }
+  /* in-situ row editing */
+  .actcell { white-space:nowrap; text-align:right; }
+  /* keep the actions column reachable without horizontal scrolling */
+  th:last-child, td.actcell { position:sticky; right:0; }
+  td.actcell { background:var(--surface); }
+  tr.editing td.actcell { background:color-mix(in srgb, var(--s1) 5%, var(--surface)); }
+  .rowbtn { font:inherit; font-size:11.5px; padding:4px 9px; border-radius:7px; cursor:pointer;
+    background:var(--surface); color:var(--ink-2); border:1px solid var(--border); }
+  .rowbtn:hover { color:var(--ink); }
+  .rowbtn.primary { background:var(--s1); color:#fff; border-color:transparent; }
+  .rowbtn.danger { color:var(--warn-ink); }
+  .rowbtn + .rowbtn { margin-left:5px; }
+  tr.editing td { background:color-mix(in srgb, var(--s1) 5%, var(--surface)); vertical-align:top; }
+  td .tin { font:inherit; font-size:12.5px; width:100%; min-width:56px; padding:4px 5px;
+    border:1px solid var(--border); border-radius:6px; background:var(--page); color:var(--ink); text-align:right; }
+  .dtedit { display:flex; flex-direction:column; gap:4px; min-width:120px; }
+  .dtedit .tin { text-align:left; }
+  .tbltools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
+
+  /* form */
+  form { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-top:12px;
+         background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 12px; }
+  @media (max-width:560px){ form{ grid-template-columns:repeat(2,1fr);} }
+  .fld { display:flex; flex-direction:column; gap:4px; }
+  .fld label { font-size:11px; color:var(--ink-2); }
+  .fld input { font:inherit; font-size:14px; padding:8px 9px; border:1px solid var(--border);
+               border-radius:8px; background:var(--page); color:var(--ink); width:100%; }
+  .formactions { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:2px; }
+  .btn { font:inherit; font-size:13px; font-weight:600; padding:9px 16px; border-radius:9px; cursor:pointer; border:1px solid transparent; }
+  .btn.primary { background:var(--s1); color:#fff; }
+  .btn.ghost { background:transparent; color:var(--ink-2); border-color:var(--border); }
+  .btn.ghost:hover { color:var(--ink); }
+  .msg { font-size:12.5px; color:var(--good); }
+  code.inline { background:var(--page); border:1px solid var(--border); border-radius:5px; padding:1px 5px; font-size:12px; }
+  details { margin-top:10px; font-size:13px; color:var(--ink-2); }
+  summary { cursor:pointer; color:var(--ink); font-weight:600; font-size:13px; }
+  .exwrap { margin-top:10px; }
+  textarea { width:100%; height:120px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
+             border:1px solid var(--border); border-radius:8px; background:var(--page); color:var(--ink); padding:10px; }
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>Newborn Glucose Tracker</h1>
+      <p class="sub">IV dextrose, formula feeds, and blood sugar over time — and the weaning of the drip.</p>
+      <p class="sub" style="font-size:12.5px"><a href="index.html" style="color:var(--s1)">← Aluminum exposure dashboard</a></p>
+    </div>
+    <button class="tbtn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+  </div>
+  <p class="disc" id="disc"></p>
+
+  <div class="intro">
+    <h3>What you're looking at</h3>
+    <p>Soon after birth his blood sugar was low, so he's on an <b>IV drip</b> that feeds sugar
+      straight into his blood while he learns to keep it up on his own through milk feeds.
+      This page follows three things side by side: his <b>blood sugar</b>, how hard the drip is
+      working (the <abbr title="Glucose Infusion Rate — how much sugar the drip delivers for his size">GIR</abbr>),
+      and how much <b>milk</b> he's taking.</p>
+    <p>The plan is to slowly turn the drip down — to <b>wean</b> it — as his feeds take over,
+      without letting his sugar dip too low. <span class="ck" style="color:var(--good);font-weight:700">✓ Good progress looks like:</span>
+      steady blood sugar while the drip steps down and the feeds climb.</p>
+    <div class="progress" id="progress"></div>
+    <p style="margin:12px 0 0"><b>Now that the drip is off:</b> the
+      <a href="index.html">aluminum exposure dashboard</a> works out how much aluminum the IV put
+      in, how his body clears it, and how that compares to the toxic threshold and to vaccines —
+      with a full <a href="aluminum-exposure-research.md">research memo</a>.</p>
+  </div>
+
+  <details>
+    <summary>Words explained</summary>
+    <p><b>Blood sugar (glucose)</b> — how much sugar is in his blood, measured in <b>mg/dL</b>. Too low is the problem being managed.</p>
+    <p><b>GIR (glucose infusion rate)</b> — how much sugar the IV drip delivers for his body size, in mg/kg/min. Think of it as <i>how hard the drip is working</i>. The goal is to bring it down to <b>zero</b> (off the drip).</p>
+    <p><b>Dextrose / “D20”</b> — the sugar dissolved in the IV fluid. “D20” means 20% dextrose. <b>IV rate</b> is how fast that fluid runs, in mL/hour.</p>
+    <p><b>Fortification (cal/oz)</b> — how calorie-rich his milk is made; 24 cal/oz is richer than 20. <b>Breast milk</b> is added alongside the formula.</p>
+    <p><b>Weaning</b> — slowly turning the drip down as his own feeds keep his sugar up. <b>“High support”</b> — a GIR above about 8, meaning he's leaning on the drip a lot.</p>
+  </details>
+
+  <div class="tiles" id="tiles"></div>
+
+  <!-- ===================== TIMELINE (Approaches A+B+C, shared time axis) ===================== -->
+  <h2>How it all moves together</h2>
+  <p class="h2note">One shared time axis. Read straight down a moment to see his sugar, how hard the drip is working (GIR), and what's going in. Hover / tap for exact values.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> his blood sugar holding steady in the green band while the GIR line steps down toward zero and the feed bars grow.</p>
+  <div class="axtoggle" role="group" aria-label="Horizontal axis mode">
+    <button class="seg on" data-mode="clock" type="button">Clock time</button>
+    <button class="seg" data-mode="age" type="button">Hours of life</button>
+  </div>
+  <div class="card" id="timelineCard">
+    <div class="crosshair" id="xhair"></div>
+    <div class="tip" id="tip"></div>
+    <div class="panel" id="p_bg"></div>
+    <div class="panel" id="p_gir"></div>
+    <div class="panel" id="p_intake"></div>
+  </div>
+
+  <div class="viewtoggle">
+    <button type="button" class="btn ghost" id="detailToggle" aria-expanded="false">Show the detailed charts ▾</button>
+    <p id="detailNote">Three deeper views for the curious: total glucose delivered, the nutrition in each feed, and the daily fluid budget.</p>
+  </div>
+
+  <div id="detailed" hidden>
+  <!-- ===================== CUMULATIVE (Approach C) ===================== -->
+  <h2>Total glucose delivered — is he catching up on his own?</h2>
+  <p class="h2note">Running total of grams of glucose in. The IV band is what the drip has given; the formula band is the glucose from his feeds. Watch the formula band steepen as he takes over.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> the formula band getting steeper — more of his sugar coming from feeds, less from the drip.</p>
+  <div class="legend" id="cumLegend"></div>
+  <div class="card"><div class="panel" id="p_cum"></div></div>
+
+  <!-- ===================== NUTRITION (Approach D) ===================== -->
+  <h2>Formula nutrition — what each feed brings</h2>
+  <p class="h2note" id="nutNote"></p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> taller bars over time as he tolerates bigger, richer feeds.</p>
+  <div class="legend" id="nutLegend"></div>
+  <div class="card"><div class="panel" id="p_nut"></div></div>
+
+  <!-- ===================== FLUID BUDGET (Approach E) ===================== -->
+  <h2>Fluid budget — why the drip has to come down</h2>
+  <p class="h2note">Total fluid (IV + feeds) is capped near <b id="capTxt"></b> per day. Every mL of formula he tolerates buys back a mL of IV dextrose — so as feeds climb, the drip must fall.</p>
+  <p class="goodnote"><span class="ck">✓ Good looks like:</span> the green IV part shrinking and the feed part growing, staying under the cap line.</p>
+  <div class="legend" id="fluidLegend"></div>
+  <div class="card"><div class="panel" id="p_fluid"></div></div>
+  </div>
+
+  <!-- ===================== DATA + FORM ===================== -->
+  <h2>Every reading</h2>
+  <p class="h2note">The full log. This is also the table view of every chart above.</p>
+  <div class="tablewrap"><table id="tbl"></table></div>
+  <div class="tbltools">
+    <button type="button" class="btn ghost" id="jsonBtn">⤓ Download all readings (.json)</button>
+    <span class="h2note" style="margin:0">Tap <b>Edit</b> on any row to change it in place. Edits, additions, and deletions save on this device.</span>
+  </div>
+
+  <h2>Add a reading</h2>
+  <p class="h2note">Log the next check. It saves to this device instantly and updates every chart. Use <b>Export</b> to copy rows into the file so they're kept for good.</p>
+  <form id="addForm">
+    <div class="fld"><label>Date</label><input id="f_d" type="date" required></div>
+    <div class="fld"><label>Time</label><input id="f_t" type="time" required></div>
+    <div class="fld"><label>Blood sugar (mg/dL)</label><input id="f_bg" type="number" inputmode="numeric" placeholder="e.g. 58"></div>
+    <div class="fld"><label>Formula (mL)</label><input id="f_ml" type="number" inputmode="decimal" placeholder="e.g. 25"></div>
+    <div class="fld"><label>Fortification (cal/oz)</label><input id="f_fort" type="number" inputmode="decimal" placeholder="24"></div>
+    <div class="fld"><label>Breast milk (mL)</label><input id="f_bm" type="number" inputmode="decimal" placeholder="0"></div>
+    <div class="fld"><label>Dextrose %</label><input id="f_dex" type="number" inputmode="decimal" placeholder="20"></div>
+    <div class="fld"><label>IV rate (mL/hr)</label><input id="f_iv" type="number" inputmode="decimal" placeholder="13"></div>
+    <div class="formactions">
+      <button type="submit" class="btn primary">Add reading</button>
+      <button type="button" class="btn ghost" id="exportBtn">Export rows</button>
+      <button type="button" class="btn ghost" id="clearBtn">Reset device changes</button>
+      <span class="msg" id="formMsg"></span>
+    </div>
+  </form>
+  <div class="exwrap" id="exwrap" style="display:none">
+    <p class="h2note" style="margin-top:14px">Paste these lines into the <code class="inline">READINGS</code> list near the top of <code class="inline">glucose.html</code> to keep them permanently:</p>
+    <textarea id="exOut" readonly></textarea>
+  </div>
+
+  <details>
+    <summary>How the numbers are calculated & where they come from</summary>
+    <p><b>GIR (Glucose Infusion Rate)</b> = (%dextrose × IV rate mL/hr) ÷ (6 × weight kg) — the Brigham &amp; Women's / CWN neonatal glucose pathway, referencing Chowning &amp; Adamkin, <i>J Perinatol</i> 2015. This baby's weight is <b id="wTxt"></b>.</p>
+    <p><b>Weaning rule</b> (first 48h, same pathway): consider weaning GIR by 0.5 if BG &gt; 50, by 1.0 if BG &gt; 60. A GIR above ~8 mg/kg/min is considered high support.</p>
+    <p><b>IV dextrose grams/hr</b> = IV rate × (%dextrose ÷ 100). <b>Feed glucose</b> = volume × carbohydrate per 100 mL. Formula carbs scale with each feed's fortification (Enfamil Gentlease base 10.8 g carb per 100 Cal; a 24 cal/oz feed carries more carb per mL than a 20 cal/oz feed); breast milk adds ~7 g carb per 100 mL. These are estimates — dietary lactose is digested to glucose + galactose, so feeds aren't a 1:1 IV-dextrose equivalent.</p>
+    <p><b>Fluid cap</b> ≈ 100 mL/kg/day (guideline ceiling on combined IV + oral intake).</p>
+    <p class="disc" style="margin:8px 0 0">Sources provided by the family: Brigham/CWN "WNH G.1" neonatal glucose pathway; Giouleka et al., <i>Children</i> 2023; Rozance &amp; Hay, <i>Matern Health Neonatol Perinatol</i> 2016. This is a personal tracking aid, not medical advice — the NICU team's readings and orders are authoritative.</p>
+  </details>
+</div>
+
+<script>
+/* ================================================================= *
+ *  CONFIG — edit these to match his chart                            *
+ * ================================================================= */
+const CONFIG = {
+  weightKg: 4.593,                 // 10 lb 2 oz
+  birth: "2026-07-02T08:18:00",    // date & time of birth → drives "hours of life"
+  fluidCapPerKgPerDay: 100,        // mL/kg/day ceiling (IV + oral)
+  girHighSupport: 8,               // mg/kg/min — "high support" reference
+  // Formula = Enfamil Gentlease. Macros are given per 100 Calories; grams per 100 mL depend
+  // on how many kcal/oz each feed is fortified to (per-reading `fort` field), so nutrition is
+  // computed per row. Base Gentlease per 100 Cal = 2.3 g protein / 5.3 g fat / 10.8 g carb.
+  formulaBase: {
+    name: "Enfamil Gentlease",
+    perCal: { carb: 10.8, fat: 5.3, protein: 2.3 }     // grams per 100 Calories
+  },
+  defaultFort: 24,     // kcal/oz assumed if a reading omits fortification
+  // Mother's milk per 100 mL (mature milk, ~20 kcal/oz). Adjust if it gets fortified.
+  breastMilk: {
+    name: "Breast milk",
+    kcalPer100: 67, carbPer100: 7.0, fatPer100: 3.6, proteinPer100: 1.1
+  }
+};
+
+/* ================================================================= *
+ *  READINGS — the data. Add a line to log a reading.                *
+ *  bg: number, or null if not measured / pending.                   *
+ *  === READINGS ===                                                 *
+ * ================================================================= */
+const READINGS = [
+  { d:"2026-07-02", t:"08:30", dex:20, iv:0, bg:9, ml:0, fort:24, bm:0 },
+  { d:"2026-07-03", t:"06:00", dex:20, iv:13, bg:68, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"11:00", dex:20, iv:13, bg:50, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"14:15", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
+  { d:"2026-07-03", t:"20:20", dex:20, iv:13, bg:56, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"02:30", dex:20, iv:13, bg:60, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"08:30", dex:20, iv:13, bg:52, ml:15, fort:20, bm:0 },
+  { d:"2026-07-04", t:"14:00", dex:20, iv:12, bg:49, ml:20, fort:24, bm:0 },
+  { d:"2026-07-04", t:"17:30", dex:20, iv:13, bg:null, ml:15, fort:24, bm:0 },
+  { d:"2026-07-04", t:"20:30", dex:20, iv:12, bg:61, ml:25, fort:24, bm:0 },
+  { d:"2026-07-04", t:"23:30", dex:20, iv:12, bg:null, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"02:30", dex:20, iv:12, bg:65, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"05:30", dex:20, iv:12, bg:null, ml:25, fort:24, bm:0 },
+  { d:"2026-07-05", t:"08:30", dex:20, iv:12, bg:65, ml:18, fort:24, bm:5 },
+  { d:"2026-07-05", t:"11:34", dex:20, iv:10, bg:null, ml:27, fort:24, bm:5 },
+  { d:"2026-07-05", t:"14:31", dex:20, iv:10, bg:61, ml:30, fort:24, bm:7 },
+  { d:"2026-07-05", t:"17:30", dex:20, iv:10, bg:null, ml:35, fort:24, bm:0 },
+  { d:"2026-07-05", t:"20:30", dex:20, iv:10, bg:78, ml:35, fort:24, bm:0 },
+  { d:"2026-07-05", t:"23:30", dex:20, iv:8, bg:null, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"02:30", dex:20, iv:8, bg:69, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"05:30", dex:20, iv:8, bg:null, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"08:30", dex:20, iv:8, bg:62, ml:40, fort:24, bm:0 },
+  { d:"2026-07-06", t:"11:30", dex:20, iv:8, bg:null, ml:55, fort:24, bm:0 },
+  { d:"2026-07-06", t:"14:30", dex:20, iv:6, bg:88, ml:50, fort:24, bm:0 },
+  { d:"2026-07-06", t:"17:30", dex:20, iv:4, bg:null, ml:50, fort:24, bm:0 },
+  { d:"2026-07-06", t:"20:30", dex:20, iv:4, bg:75, ml:45, fort:24, bm:0 },
+  { d:"2026-07-06", t:"23:30", dex:20, iv:2, bg:null, ml:50, fort:24, bm:0 },
+  { d:"2026-07-07", t:"02:30", dex:20, iv:2, bg:56, ml:50, fort:24, bm:0 },
+  { d:"2026-07-07", t:"05:30", dex:20, iv:2, bg:null, ml:50, fort:24, bm:0 },
+  { d:"2026-07-07", t:"08:30", dex:20, iv:2, bg:null, ml:47, fort:24, bm:0 },
+  { d:"2026-07-07", t:"11:38", dex:20, iv:2, bg:62, ml:0, fort:24, bm:55 },
+  { d:"2026-07-07", t:"14:30", dex:20, iv:1, bg:null, ml:55, fort:24, bm:0 },
+  { d:"2026-07-07", t:"17:32", dex:20, iv:0, bg:63, ml:55, fort:24, bm:0 },
+  { d:"2026-07-07", t:"23:30", dex:20, iv:0, bg:59, ml:55, fort:24, bm:0 },
+  { d:"2026-07-08", t:"05:00", dex:20, iv:0, bg:53, ml:0, fort:24, bm:0 },
+  { d:"2026-07-08", t:"08:00", dex:20, iv:0, bg:null, ml:0, fort:24, bm:0 },
+  { d:"2026-07-08", t:"11:00", dex:20, iv:0, bg:71, ml:60, fort:22, bm:0 }
+];
+/* === END READINGS === */
+
+/* ================================================================= *
+ *  Derived data                                                     *
+ * ================================================================= */
+const LS_KEY = "glucoseTrackerEntries.v1";
+const LS_EDITS = "glucoseTrackerEdits.v1";   // { rowId: {field overrides} | {__deleted:true} }
+function loadExtra(){ try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ return []; } }
+function saveExtra(a){ try { localStorage.setItem(LS_KEY, JSON.stringify(a)); } catch(e){} }
+function loadEdits(){ try { return JSON.parse(localStorage.getItem(LS_EDITS)) || {}; } catch(e){ return {}; } }
+function saveEdits(o){ try { localStorage.setItem(LS_EDITS, JSON.stringify(o)); } catch(e){} }
+
+function gir(r){ return (r.dex * r.iv) / (6 * CONFIG.weightKg); }
+function ivGramsPerHr(r){ return r.iv * (r.dex/100); }
+// Formula macros per 100 mL at a given fortification (kcal/oz), scaled from the per-100-Cal base.
+function formulaPer100(fort){
+  const f = fort || CONFIG.defaultFort;
+  const kcal = 100 * f / 29.5735;                 // kcal per 100 mL at this caloric density
+  const b = CONFIG.formulaBase.perCal;
+  return { kcal, carb: b.carb*kcal/100, fat: b.fat*kcal/100, protein: b.protein*kcal/100 };
+}
+const BM = CONFIG.breastMilk;
+function formulaVol(r){ return r.ml||0; }
+function bmVol(r){ return r.bm||0; }
+function feedVol(r){ return (r.ml||0) + (r.bm||0); }
+function feedCarbG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.carb/100 + (r.bm||0)*BM.carbPer100/100; }
+function feedFatG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.fat/100 + (r.bm||0)*BM.fatPer100/100; }
+function feedProtG(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.protein/100 + (r.bm||0)*BM.proteinPer100/100; }
+function feedKcal(r){ const fp=formulaPer100(r.fort); return (r.ml||0)*fp.kcal/100 + (r.bm||0)*BM.kcalPer100/100; }
+function tof(r){ return new Date(r.d + "T" + (r.t.length===5?r.t:r.t) + ":00").getTime(); }
+const BIRTH_MS = CONFIG.birth ? new Date(CONFIG.birth).getTime() : null;
+function hoursOfLife(t){ return BIRTH_MS==null ? null : (t - BIRTH_MS)/3600e3; }
+function dayOfLife(t){ const h=hoursOfLife(t); return h==null?null:Math.floor(h/24)+1; }
+function ageLabel(t){ const h=hoursOfLife(t); if(h==null) return ""; return `Day ${Math.floor(h/24)+1} · ${h.toFixed(0)}h`; }
+// age-appropriate lower weaning/watch line for BG (mirrors the chart reference lines)
+function bgLowLine(t){ return (BIRTH_MS!=null && hoursOfLife(t) > 48) ? 65 : 50; }
+let AXMODE = "clock";   // "clock" | "age"
+
+let DATA = [];
+let EDITING = null;   // rowId currently being edited in the table, or null
+// Stable row ids: file rows "f<index>", device-added rows "x<index>". Edits/deletes are
+// stored as overrides keyed by id, so a file row can be corrected without touching the file.
+function rebuild(){
+  const edits = loadEdits();
+  const base   = READINGS.map((r,i) => ({ ...r, _id:"f"+i, _src:"file" }));
+  const extras = loadExtra().map((r,i) => ({ ...r, _id:"x"+i, _src:"ls" }));
+  DATA = base.concat(extras)
+    .map(r => {
+      const e = edits[r._id];
+      if(e && e.__deleted) return null;
+      return e ? { ...r, ...e } : r;
+    })
+    .filter(Boolean)
+    .map(r => ({ ...r, bg: (r.bg===undefined?null:r.bg) }))
+    .filter(r => r.d && r.t)
+    .sort((a,b)=> tof(a)-tof(b));
+}
+
+/* ================================================================= *
+ *  Tiny SVG chart toolkit (single axis per panel; shared x domain)  *
+ * ================================================================= */
+const VBW = 720, ML = 46, MR = 16;   // viewBox width, left/right plot margins
+let T0, T1;                          // shared time domain
+function setDomain(){
+  const ts = DATA.map(tof);
+  T0 = Math.min(...ts); T1 = Math.max(...ts);
+  const pad = (T1-T0)*0.03 || 3600e3;
+  T0 -= pad; T1 += pad;
+}
+function xOf(t){ return ML + (t-T0)/(T1-T0) * (VBW-ML-MR); }
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+// x-axis ticks. Clock mode: every 6h wall-clock. Age mode: every 12h of life.
+function xTicks(){
+  const out=[];
+  if(AXMODE==="age" && BIRTH_MS!=null){
+    const step=12; // hours of life
+    let H=Math.ceil(hoursOfLife(T0)/step)*step;
+    for(; ; H+=step){
+      const t=BIRTH_MS + H*3600e3; if(t>T1) break; if(t<T0) continue;
+      const dayBound = H%24===0;
+      out.push({t, lab:H+"h", day: dayBound?("Day "+(H/24+1)):null, midnight:dayBound});
+    }
+    return out;
+  }
+  const step=6*3600e3;
+  let d=new Date(T0); d.setMinutes(0,0,0); d.setHours(Math.ceil(d.getHours()/6)*6);
+  for(let t=d.getTime(); t<=T1; t+=step){
+    const dt=new Date(t); let h=dt.getHours(); const ap=h<12?"a":"p"; let hh=h%12; if(hh===0)hh=12;
+    const lab=(hh)+ap; const day=dt.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    out.push({t, lab, day, midnight: h===0});
+  }
+  return out;
+}
+// clinically meaningful age boundaries that fall inside the current domain
+function ageMarkers(){
+  if(BIRTH_MS==null) return [];
+  return [{h:48,lab:"48h"},{h:72,lab:"72h"}]
+    .map(m=>({...m, t: BIRTH_MS + m.h*3600e3}))
+    .filter(m=> m.t>T0 && m.t<T1);
+}
+function ageMarkerSvg(y1, y2, topPanel){
+  return ageMarkers().map(m=>{
+    const x=xOf(m.t).toFixed(1);
+    let s=`<line x1="${x}" y1="${y1.toFixed(1)}" x2="${x}" y2="${y2.toFixed(1)}" stroke="var(--axis)" stroke-width="1.5" opacity="0.6"/>`;
+    if(topPanel) s+=`<text x="${(xOf(m.t)+4).toFixed(1)}" y="${(y1+10).toFixed(1)}" font-size="9.5" fill="var(--muted)" font-weight="600">${m.lab}</text>`;
+    return s;
+  }).join("");
+}
+
+// Build one panel svg. opts: {h, y0, y1, ticks:[], fmtY, title, drawFn, showX}
+function panel(el, opts){
+  const H=opts.h, PT=8, PB=opts.showX?26:8, plotH=H-PT-PB;
+  const yOf = v => PT + (opts.y1 - v)/(opts.y1-opts.y0) * plotH;
+  let g="";
+  // y gridlines + labels
+  (opts.ticks||[]).forEach(v=>{
+    const y=yOf(v);
+    g+=`<line x1="${ML}" y1="${y.toFixed(1)}" x2="${VBW-MR}" y2="${y.toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g+=`<text x="${ML-6}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--muted)">${opts.fmtY?opts.fmtY(v):v}</text>`;
+  });
+  // x ticks
+  if(opts.showX){
+    xTicks().forEach(tk=>{
+      const x=xOf(tk.t);
+      g+=`<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${(H-PB).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
+      g+=`<text x="${x.toFixed(1)}" y="${(H-PB+13).toFixed(1)}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${tk.lab}</text>`;
+      if(tk.midnight) g+=`<text x="${x.toFixed(1)}" y="${(H-PB+24).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--muted)" font-weight="600">${tk.day}</text>`;
+    });
+  } else {
+    xTicks().forEach(tk=>{ const x=xOf(tk.t);
+      g+=`<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${(H-PB).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`; });
+  }
+  // caller-drawn marks
+  g+=opts.drawFn(yOf, plotH, PT);
+  el.innerHTML = `<svg viewBox="0 0 ${VBW} ${H}" role="img" aria-label="${esc(opts.aria||opts.title||'chart')}">${g}</svg>`;
+  el._yOf = yOf; el._H = H;
+}
+
+function line(pts, color, w=2){
+  if(!pts.length) return "";
+  return `<path d="M${pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L")}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+function stepPath(rows, valFn, yOf){
+  // step-after: hold value until next reading
+  let segs=[];
+  for(let i=0;i<rows.length;i++){
+    const x1=xOf(tof(rows[i])); const y=yOf(valFn(rows[i]));
+    const x2 = i<rows.length-1 ? xOf(tof(rows[i+1])) : (VBW-MR);
+    segs.push([x1,y,x2,y]);
+  }
+  let d=""; segs.forEach((s,i)=>{ d += (i===0?`M${s[0].toFixed(1)} ${s[1].toFixed(1)}`:` L${s[0].toFixed(1)} ${s[1].toFixed(1)}`)+` L${s[2].toFixed(1)} ${s[3].toFixed(1)}`; });
+  return d;
+}
+function dot(x,y,color,r=4){
+  return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r+2}" fill="var(--surface)"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${color}"/>`;
+}
+
+/* ================================================================= *
+ *  Render                                                           *
+ * ================================================================= */
+function niceTicks(min,max,n=4){
+  const span=max-min||1; const raw=span/n;
+  const mag=Math.pow(10,Math.floor(Math.log10(raw)));
+  const norm=raw/mag; let step;
+  step = norm<1.5?1:norm<3?2:norm<7?5:10; step*=mag;
+  const out=[]; let v=Math.ceil(min/step)*step;
+  for(; v<=max+1e-9; v+=step) out.push(Math.round(v*100)/100);
+  return out;
+}
+
+// Directional trend for a primary tile. goodDir "up"=BG (toward safe range),
+// "down"=GIR (weaning). Arrow encodes literal direction; color+word encode good/bad
+// (decoupled, since "down" is good for GIR but bad for BG). Returns null if nothing
+// to compare (single reading).
+function trend(cur, prev, goodDir){
+  if(cur==null || prev==null) return null;
+  const d = cur - prev;
+  const eps = goodDir==="down" ? 0.1 : 1;                 // GIR ~0.1 mg/kg/min; BG 1 mg/dL
+  if(Math.abs(d) < eps)
+    return {cls:"flat", arrow:"→", label:"holding", aria:"holding steady vs previous reading"};
+  const mag = goodDir==="down" ? Math.abs(d).toFixed(1) : String(Math.round(Math.abs(d)));
+  const improving = goodDir==="down" ? d<0 : d>0;
+  const arrow = d<0 ? "▼" : "▲";
+  const word  = goodDir==="down" ? (improving?"lower":"higher")    // GIR
+                                 : (improving?"higher":"lower");   // BG
+  return { cls: improving?"good":"warn", arrow, label:`${mag} ${word}`,
+           aria:`${mag} ${word} than previous reading, ${improving?"improving":"worsening"}` };
+}
+
+function renderTiles(){
+  const withBg = DATA.filter(r=>r.bg!=null);
+  const last = DATA[DATA.length-1];
+  const lastBg = withBg[withBg.length-1];
+  const prevBg = withBg[withBg.length-2];
+  const g = gir(last);
+
+  // GIR is a step function that holds flat between drip changes — compare against the
+  // most recent earlier reading whose GIR actually differs (the last wean step), so the
+  // trend reflects weaning progress instead of reading "holding" between changes.
+  let gPrev=null, foundDistinct=false;
+  for(let i=DATA.length-2;i>=0;i--){ const gi=gir(DATA[i]);
+    if(Math.abs(gi-g)>0.1){ gPrev=gi; foundDistinct=true; break; } }
+  const girTrend = DATA.length<2 ? null
+    : foundDistinct ? trend(g, gPrev, "down")
+    : {cls:"flat", arrow:"→", label:"holding", aria:"drip unchanged so far"};
+  const bgTrend = trend(lastBg?lastBg.bg:null, prevBg?prevBg.bg:null, "up");
+
+  // clinical zone → the tile meta, coloured as caution when in a watch zone
+  const girCaution = g>CONFIG.girHighSupport;
+  const bgCaution  = lastBg && lastBg.bg < bgLowLine(tof(lastBg));
+
+  const tiles=[
+    {lab:"Current GIR", val:`${g.toFixed(1)} <small>mg/kg/min</small>`,
+     meta: girCaution?"high support (&gt;8)":"in typical range", metaCls: girCaution?"caution":"", trend:girTrend},
+    {lab:"Latest blood sugar", val: lastBg?`${lastBg.bg} <small>mg/dL</small>`:"—",
+     meta: lastBg?(atTxt(lastBg)+(BIRTH_MS!=null?` · ${ageLabel(tof(lastBg))}`:'')):"",
+     metaCls: bgCaution?"caution":"", trend:bgTrend},
+    {lab:"IV drip", val:`D${last.dex} <small>@ ${last.iv} mL/hr</small>`, meta:`${ivGramsPerHr(last).toFixed(1)} g dextrose/hr`},
+    {lab:"Latest feed", val:`${feedVol(last)} <small>mL</small>`, meta:`${last.ml||0} mL formula @ ${last.fort||CONFIG.defaultFort}cal${last.bm?` + ${last.bm} BM`:''} · ${Math.round(feedKcal(last))} kcal`}
+  ];
+  document.getElementById("tiles").innerHTML = tiles.map(t=>{
+    const tr=t.trend;
+    const cls = tr ? `tile trend ${tr.cls}` : "tile";
+    const pill = tr ? `<div class="pill ${tr.cls}" aria-label="${tr.aria}">`+
+                      `<span class="ar" aria-hidden="true">${tr.arrow}</span>${tr.label}</div>` : "";
+    return `<div class="${cls}"><div class="lab">${t.lab}</div>`+
+           `<div class="val">${t.val}</div>${pill}`+
+           `<div class="meta${t.metaCls?' '+t.metaCls:''}">${t.meta}</div></div>`;
+  }).join("");
+}
+function atTxt(r){ const dt=new Date(tof(r)); return dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}); }
+
+// "Off the drip" progress: how far GIR has come down from its peak toward zero.
+function renderProgress(){
+  const el=document.getElementById("progress"); if(!el) return;
+  const peak=Math.max(...DATA.map(gir)), cur=gir(DATA[DATA.length-1]);
+  if(!(peak>0)){ el.innerHTML=""; return; }
+  const pct=Math.max(0,Math.min(100,(peak-cur)/peak*100));
+  el.innerHTML=
+    `<div class="ptrack"><div class="pfill" style="width:${pct.toFixed(0)}%"></div></div>`+
+    `<div class="plabel">Weaning progress: GIR down from a peak of <b>${peak.toFixed(1)}</b> to <b>${cur.toFixed(1)}</b> — about <b>${pct.toFixed(0)}%</b> of the way to off the drip (0).</div>`;
+}
+// narrative beats on the timeline
+function storyMarkers(){
+  const out=[];
+  const firstIv=DATA.find(r=>r.iv>0); if(firstIv) out.push({t:tof(firstIv), lab:"drip started"});
+  const firstBm=DATA.find(r=>(r.bm||0)>0); if(firstBm) out.push({t:tof(firstBm), lab:"breast milk added"});
+  return out.filter(m=> m.t>=T0 && m.t<=T1);
+}
+
+function renderTimeline(){
+  // Panel 1 — Blood glucose
+  const bgRows=DATA.filter(r=>r.bg!=null);
+  const bgVals=bgRows.map(r=>r.bg);
+  const anyPost48 = BIRTH_MS!=null && DATA.some(r=>hoursOfLife(tof(r))>48);
+  const bgMin=Math.min(45, ...bgVals)-5, bgMax=Math.max(anyPost48?80:66, ...bgVals.map(v=>v+8));
+  document.getElementById("p_bg").innerHTML='';
+  panel(document.getElementById("p_bg"), {
+    h:150, y0:bgMin, y1:bgMax, ticks:niceTicks(bgMin,bgMax,4), title:"Blood glucose (mg/dL)",
+    aria:"Blood glucose over time in mg per deciliter",
+    drawFn:(yOf, plotH, PT)=>{
+      let s="";
+      // green "target zone" wash — his sugar sitting above the age-appropriate wean line = good
+      const split = BIRTH_MS!=null ? Math.min(VBW-MR, Math.max(ML, xOf(BIRTH_MS+48*3600e3))) : ML;
+      function greenBand(low,x1,x2){
+        if(x2-x1<3 || low<bgMin || low>bgMax) return "";
+        return `<rect x="${x1.toFixed(1)}" y="${PT.toFixed(1)}" width="${(x2-x1).toFixed(1)}" height="${(yOf(low)-PT).toFixed(1)}" fill="var(--good)" opacity="0.07"/>`;
+      }
+      if(BIRTH_MS==null){ s+=greenBand(50,ML,VBW-MR); }
+      else { if(split>ML+2) s+=greenBand(50,ML,split); if(split<VBW-MR-2) s+=greenBand(65,split,VBW-MR); }
+      s+=`<text x="${(ML+4).toFixed(1)}" y="${(PT+plotH-4).toFixed(1)}" font-size="9" fill="var(--good)" opacity="0.9">target zone</text>`;
+      // age boundary verticals (48h / 72h of life), labelled on this top panel
+      s+=ageMarkerSvg(PT, PT+plotH, true);
+      function wline(v,lab,x1,x2){
+        if(v<bgMin||v>bgMax||x2-x1<3) return "";
+        const y=yOf(v);
+        return `<line x1="${x1.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--axis)" stroke-width="1" opacity="0.5"/>`+
+               `<text x="${(x2-2).toFixed(1)}" y="${(y-3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--muted)">${lab}</text>`;
+      }
+      if(BIRTH_MS!=null && split>ML+2){                      // pre-48h region → early rule
+        s+=wline(50,"BG&gt;50 · wean 0.5",ML,split);
+        s+=wline(60,"BG&gt;60 · wean 1.0",ML,split);
+      }
+      if(BIRTH_MS==null){                                    // no birth time → early rule across
+        s+=wline(50,"BG&gt;50 · wean 0.5",ML,VBW-MR);
+        s+=wline(60,"BG&gt;60 · wean 1.0",ML,VBW-MR);
+      } else if(split<VBW-MR-2){                              // post-48h region → later rule
+        s+=wline(65,"BG&gt;65 · wean 0.5",split,VBW-MR);
+        s+=wline(75,"BG&gt;75 · wean 1.0",split,VBW-MR);
+      }
+      const pts=bgRows.map(r=>[xOf(tof(r)), yOf(r.bg)]);
+      s+=line(pts,"var(--s1)",2);
+      bgRows.forEach(r=>{ s+=dot(xOf(tof(r)),yOf(r.bg),"var(--s1)"); });
+      // label last value
+      if(bgRows.length){ const r=bgRows[bgRows.length-1]; s+=`<text x="${(xOf(tof(r))-8).toFixed(1)}" y="${(yOf(r.bg)-8).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="var(--ink)">${r.bg}</text>`; }
+      // narrative beats: drip started, breast milk added
+      storyMarkers().forEach(m=>{
+        const x=xOf(m.t), near=x>VBW-95;
+        s+=`<line x1="${x.toFixed(1)}" y1="${PT.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(PT+plotH).toFixed(1)}" stroke="var(--s6)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>`;
+        s+=`<text x="${(near?x-3:x+3).toFixed(1)}" y="${(PT+plotH-14).toFixed(1)}" text-anchor="${near?'end':'start'}" font-size="9" fill="var(--s6)">${m.lab}</text>`;
+      });
+      return s;
+    }
+  });
+  document.getElementById("p_bg").insertAdjacentHTML("afterbegin",
+    `<div class="plab"><span class="dot" style="background:var(--s1)"></span>Blood glucose <span class="cur">mg/dL</span></div>`);
+
+  // Panel 2 — GIR (step)
+  const gMax=Math.max(CONFIG.girHighSupport+1, ...DATA.map(gir))+0.5, gMin=Math.min(...DATA.map(gir))-1.5;
+  const gMinC=Math.max(0,gMin);
+  document.getElementById("p_gir").innerHTML='';
+  panel(document.getElementById("p_gir"), {
+    h:130, y0:gMinC, y1:gMax, ticks:niceTicks(gMinC,gMax,4), title:"GIR (mg/kg/min)",
+    aria:"Glucose infusion rate over time, mg per kg per minute, as a step line",
+    drawFn:(yOf,plotH,PT)=>{
+      let s=ageMarkerSvg(PT, PT+plotH, false);
+      // "high support" band > 8 (needs a lot of help)
+      if(CONFIG.girHighSupport<gMax){ const yb=yOf(CONFIG.girHighSupport);
+        s+=`<rect x="${ML}" y="${PT}" width="${VBW-ML-MR}" height="${(yb-PT).toFixed(1)}" fill="var(--band)"/>`;
+        s+=`<line x1="${ML}" y1="${yb.toFixed(1)}" x2="${VBW-MR}" y2="${yb.toFixed(1)}" stroke="var(--axis)" stroke-width="1" opacity="0.55"/>`;
+        s+=`<text x="${ML+4}" y="${(yb-4).toFixed(1)}" font-size="9.5" fill="var(--muted)">needs a lot of help (&gt;8)</text>`;
+      }
+      // target line: the finish line is 0 — off the drip
+      const yGoal=yOf(0);
+      s+=`<line x1="${ML}" y1="${yGoal.toFixed(1)}" x2="${VBW-MR}" y2="${yGoal.toFixed(1)}" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+      s+=`<text x="${(VBW-MR-2).toFixed(1)}" y="${(yGoal-4).toFixed(1)}" text-anchor="end" font-size="9.5" font-weight="600" fill="var(--good)">Goal · off the drip (0)</text>`;
+      s+=`<path d="${stepPath(DATA,gir,yOf)}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      DATA.forEach(r=>{ s+=dot(xOf(tof(r)),yOf(gir(r)),"var(--s2)",3); });
+      const lr=DATA[DATA.length-1];
+      s+=`<text x="${(xOf(tof(lr))-8).toFixed(1)}" y="${(yOf(gir(lr))-8).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="var(--ink)">${gir(lr).toFixed(1)}</text>`;
+      return s;
+    }
+  });
+  document.getElementById("p_gir").insertAdjacentHTML("afterbegin",
+    `<div class="plab"><span class="dot" style="background:var(--s2)"></span>GIR — how hard the drip is working · lower is better <span class="cur">mg/kg/min</span></div>`);
+
+  // Panel 3 — Intake (formula + breast milk volume per feed, stacked)
+  const mlMax=Math.max(30, ...DATA.map(feedVol))+4;
+  document.getElementById("p_intake").innerHTML='';
+  panel(document.getElementById("p_intake"), {
+    h:158, y0:0, y1:mlMax, ticks:niceTicks(0,mlMax,4), title:"Intake", showX:true,
+    fmtY:v=>v, aria:"Feed volume per feed in milliliters, formula and breast milk stacked",
+    drawFn:(yOf,plotH,PT)=>{
+      let s=ageMarkerSvg(PT, PT+plotH, false);
+      const bw=14; const base=yOf(0);
+      DATA.forEach(r=>{
+        const x=xOf(tof(r)); const fml=r.ml||0, bm=r.bm||0;
+        if(fml){ const y=yOf(fml); s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${(base-y).toFixed(1)}" rx="3" fill="var(--s3)"/>`; }
+        if(bm){ const yTop=yOf(fml+bm), yBot=yOf(fml)-2; const h=yBot-yTop; if(h>0) s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="3" fill="var(--s6)"/>`; }
+      });
+      const lr=DATA[DATA.length-1]; const tv=feedVol(lr);
+      if(tv){ s+=`<text x="${xOf(tof(lr)).toFixed(1)}" y="${(yOf(tv)-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${tv}</text>`; }
+      return s;
+    }
+  });
+  document.getElementById("p_intake").insertAdjacentHTML("afterbegin",
+    `<div class="plab"><span class="dot" style="background:var(--s3)"></span>Formula <span class="dot" style="background:var(--s6)"></span>Breast milk <span class="cur">mL per feed</span></div>`);
+}
+
+function renderCumulative(){
+  // cumulative grams of glucose: IV dextrose (integrated over held rate) + formula carb (bolus at each feed)
+  const rows=DATA; let cumIV=0, cumF=0; const series=[];
+  for(let i=0;i<rows.length;i++){
+    if(i>0){ const dtHr=(tof(rows[i])-tof(rows[i-1]))/3600e3; cumIV += ivGramsPerHr(rows[i-1])*dtHr; }
+    cumF += feedCarbG(rows[i]);
+    series.push({t:tof(rows[i]), iv:cumIV, f:cumF, tot:cumIV+cumF});
+  }
+  const maxTot=Math.max(...series.map(s=>s.tot),1);
+  const el=document.getElementById("p_cum"); el.innerHTML='';
+  panel(el,{h:190, y0:0, y1:maxTot*1.08, ticks:niceTicks(0,maxTot*1.08,4), showX:true, title:"Cumulative glucose (g)",
+    fmtY:v=>v>=10?Math.round(v):v, aria:"Cumulative grams of glucose delivered, IV dextrose and formula stacked",
+    drawFn:(yOf)=>{
+      let s="";
+      // stacked areas: IV (bottom) + formula on top
+      const ivTop=series.map(p=>[xOf(p.t),yOf(p.iv)]);
+      const totTop=series.map(p=>[xOf(p.t),yOf(p.tot)]);
+      const base=yOf(0);
+      // IV area
+      s+=`<path d="M${xOf(series[0].t).toFixed(1)} ${base.toFixed(1)} L${ivTop.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L")} L${xOf(series[series.length-1].t).toFixed(1)} ${base.toFixed(1)} Z" fill="var(--s2)" opacity="0.14"/>`;
+      // formula area (between iv line and tot line) — draw as tot area minus, use two washes; simpler: formula wash from ivTop to totTop
+      let fpath=`M${ivTop.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L")}`;
+      for(let i=totTop.length-1;i>=0;i--) fpath+=` L${totTop[i][0].toFixed(1)} ${totTop[i][1].toFixed(1)}`;
+      s+=`<path d="${fpath} Z" fill="var(--s3)" opacity="0.18"/>`;
+      s+=line(ivTop,"var(--s2)",2);
+      s+=line(totTop,"var(--s3)",2);
+      // end labels
+      const last=series[series.length-1];
+      s+=`<text x="${(VBW-MR)}" y="${(yOf(last.tot)-6).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="var(--ink)">${last.tot.toFixed(0)} g total</text>`;
+      s+=`<text x="${(VBW-MR)}" y="${(yOf(last.iv)+13).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--muted)">IV ${last.iv.toFixed(0)} g</text>`;
+      return s;
+    }});
+  document.getElementById("cumLegend").innerHTML=
+    `<span><span class="lk" style="background:var(--s2)"></span>IV dextrose (cumulative)</span>`+
+    `<span><span class="lk" style="background:var(--s3)"></span>Formula glucose (cumulative)</span>`;
+}
+
+function renderNutrition(){
+  document.getElementById("nutNote").innerHTML =
+    `<b>${esc(CONFIG.formulaBase.name)}</b> (fortified to 20 or 24 kcal/oz per feed) plus breast milk once it's given. Each feed stacked by macronutrient (grams), combining both sources. Carbs are the direct glucose; fat &amp; protein fuel the gluconeogenesis that steadies his sugar between feeds.`;
+  const feeds=DATA.filter(r=>feedVol(r)>0);
+  const totMax=Math.max(...feeds.map(r=>feedCarbG(r)+feedFatG(r)+feedProtG(r)),1);
+  const el=document.getElementById("p_nut"); el.innerHTML='';
+  panel(el,{h:190,y0:0,y1:totMax*1.12,ticks:niceTicks(0,totMax*1.12,4),showX:true,title:"Grams per feed",
+    fmtY:v=>v, aria:"Grams of carbohydrate, fat and protein per feed, stacked",
+    drawFn:(yOf)=>{
+      let s=""; const bw=16; const base=yOf(0);
+      feeds.forEach(r=>{
+        const x=xOf(tof(r)); const parts=[[feedCarbG(r),"var(--s3)"],[feedFatG(r),"var(--s4)"],[feedProtG(r),"var(--s5)"]];
+        let acc=0;
+        parts.forEach(([g,c])=>{
+          const yTop=yOf(acc+g), yBot=yOf(acc);
+          const h=yBot-yTop-2; if(h<=0){acc+=g;return;}
+          s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${yTop.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="3" fill="${c}"/>`;
+          acc+=g;
+        });
+      });
+      const lr=feeds[feeds.length-1]; const tot=feedCarbG(lr)+feedFatG(lr)+feedProtG(lr);
+      s+=`<text x="${xOf(tof(lr)).toFixed(1)}" y="${(yOf(tot)-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${tot.toFixed(1)}g</text>`;
+      return s;
+    }});
+  document.getElementById("nutLegend").innerHTML=
+    `<span><span class="lk" style="background:var(--s3)"></span>Carbohydrate (glucose)</span>`+
+    `<span><span class="lk" style="background:var(--s4)"></span>Fat</span>`+
+    `<span><span class="lk" style="background:var(--s5)"></span>Protein</span>`;
+}
+
+function renderFluid(){
+  document.getElementById("capTxt").textContent =
+    `${Math.round(CONFIG.fluidCapPerKgPerDay*CONFIG.weightKg)} mL (${CONFIG.fluidCapPerKgPerDay} mL/kg)`;
+  // aggregate by calendar day: IV volume = mean rate*24 (approx from readings that day); formula = sum of logged feeds
+  const byDay={};
+  DATA.forEach(r=>{
+    const day=r.d; byDay[day]=byDay[day]||{ivRates:[],feed:0,day};
+    byDay[day].ivRates.push(r.iv); byDay[day].feed += feedVol(r);
+  });
+  const days=Object.values(byDay).sort((a,b)=>a.day<b.day?-1:1).map(o=>{
+    const ivRate=o.ivRates.reduce((a,b)=>a+b,0)/o.ivRates.length;
+    return {day:o.day, iv: ivRate*24, feed:o.feed};
+  });
+  const cap=CONFIG.fluidCapPerKgPerDay*CONFIG.weightKg;
+  const maxV=Math.max(cap*1.05, ...days.map(d=>d.iv+d.feed));
+  const el=document.getElementById("p_fluid"); el.innerHTML='';
+  const n=days.length; const slot=(VBW-ML-MR)/Math.max(n,1); const bw=Math.min(90, slot*0.5);
+  panel(el,{h:180,y0:0,y1:maxV,ticks:niceTicks(0,maxV,4),title:"mL per day",fmtY:v=>Math.round(v),
+    aria:"Daily fluid intake, IV and formula stacked, against the fluid cap",
+    drawFn:(yOf,plotH,PT)=>{
+      let s=""; const base=yOf(0);
+      // cap line
+      const yc=yOf(cap);
+      s+=`<line x1="${ML}" y1="${yc.toFixed(1)}" x2="${VBW-MR}" y2="${yc.toFixed(1)}" stroke="var(--warning)" stroke-width="2"/>`;
+      s+=`<text x="${VBW-MR}" y="${(yc-5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--warn-ink)" font-weight="600">fluid cap ~${Math.round(cap)} mL</text>`;
+      days.forEach((d,i)=>{
+        const cx=ML+slot*(i+0.5);
+        const yIVb=base, yIVt=yOf(d.iv);
+        s+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yIVt.toFixed(1)}" width="${bw.toFixed(1)}" height="${(yIVb-yIVt).toFixed(1)}" rx="3" fill="var(--s2)"/>`;
+        const yFt=yOf(d.iv+d.feed), yFb=yOf(d.iv)-2;
+        const fh=yFb-yFt; if(fh>0) s+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yFt.toFixed(1)}" width="${bw.toFixed(1)}" height="${fh.toFixed(1)}" rx="3" fill="var(--s3)"/>`;
+        const dt=new Date(d.day+"T00:00:00");
+        s+=`<text x="${cx.toFixed(1)}" y="${(base+15).toFixed(1)}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${dt.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</text>`;
+        s+=`<text x="${cx.toFixed(1)}" y="${(yFt-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${Math.round(d.iv+d.feed)}</text>`;
+      });
+      return s;
+    }});
+  document.getElementById("fluidLegend").innerHTML=
+    `<span><span class="lk" style="background:var(--s2)"></span>IV dextrose (mL/day)</span>`+
+    `<span><span class="lk" style="background:var(--s3)"></span>Feeds (mL/day)</span>`+
+    `<span><span class="lk" style="background:var(--warning)"></span>Fluid cap</span>`;
+}
+
+function editRowHtml(r, ageCol){
+  const fort = r.fort||CONFIG.defaultFort;
+  const inp = (k,v,attr="") => `<input class="tin" data-k="${k}" value="${v==null?'':v}" ${attr}>`;
+  return `<tr data-id="${r._id}" class="editing">`+
+    `<td><div class="dtedit">${inp('d',r.d,'type="date"')}${inp('t',r.t,'type="time"')}</div></td>`+
+    (ageCol?`<td>—</td>`:'')+
+    `<td>${inp('bg',r.bg,'type="number" inputmode="numeric" placeholder="—"')}</td>`+
+    `<td>${inp('dex',r.dex,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('iv',r.iv,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${gir(r).toFixed(1)}</td>`+
+    `<td>${inp('ml',r.ml||0,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('fort',fort,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${inp('bm',r.bm||0,'type="number" inputmode="decimal"')}</td>`+
+    `<td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td>`+
+    `<td class="actcell">`+
+      `<button class="rowbtn primary" data-act="save">Save</button>`+
+      `<button class="rowbtn" data-act="cancel">Cancel</button>`+
+      `<button class="rowbtn danger" data-act="delete">Delete</button></td></tr>`;
+}
+function renderTable(){
+  const ageCol = BIRTH_MS!=null;
+  let h=`<thead><tr><th>Date · time</th>${ageCol?'<th>Age</th>':''}<th>Blood sugar (mg/dL)</th><th>Dextrose</th><th>IV rate (mL/hr)</th><th>GIR (mg/kg/min)</th><th>Formula (mL)</th><th>Fortification (cal/oz)</th><th>Breast milk (mL)</th><th>Carbs (g)</th><th>Calories</th><th></th></tr></thead><tbody>`;
+  DATA.forEach(r=>{
+    if(EDITING===r._id){ h+=editRowHtml(r, ageCol); return; }
+    const dt=new Date(tof(r));
+    h+=`<tr data-id="${r._id}"><td>${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</td>`+
+       (ageCol?`<td>${hoursOfLife(tof(r)).toFixed(0)}h</td>`:'')+
+       `<td class="${r.bg==null?'pending':''}">${r.bg==null?'—':r.bg}</td>`+
+       `<td>D${r.dex}</td><td>${r.iv}</td><td>${gir(r).toFixed(1)}</td>`+
+       `<td>${r.ml||0}</td><td>${r.fort||CONFIG.defaultFort}</td><td>${r.bm||0}</td><td>${feedCarbG(r).toFixed(1)}</td><td>${Math.round(feedKcal(r))}</td>`+
+       `<td class="actcell"><button class="rowbtn" data-act="edit">Edit</button></td></tr>`;
+  });
+  document.getElementById("tbl").innerHTML=h+`</tbody>`;
+}
+
+/* ---- in-situ table editing + full-grid JSON export ---- */
+function initTable(){
+  const tbl=document.getElementById("tbl");
+  tbl.addEventListener("click", e=>{
+    const btn=e.target.closest("button[data-act]"); if(!btn) return;
+    const tr=btn.closest("tr"); const id=tr && tr.getAttribute("data-id");
+    const act=btn.dataset.act;
+    if(act==="edit"){ EDITING=id; renderTable(); const inp=tbl.querySelector("tr.editing input"); if(inp) inp.focus(); }
+    else if(act==="cancel"){ EDITING=null; renderTable(); }
+    else if(act==="save"){ saveEditRow(id, tr); }
+    else if(act==="delete"){ deleteRow(id); }
+  });
+  document.getElementById("jsonBtn").addEventListener("click", exportJson);
+}
+function saveEditRow(id, tr){
+  const val=k=>{ const el=tr.querySelector(`input[data-k="${k}"]`); return el?el.value.trim():""; };
+  const d=val('d'), t=val('t');
+  if(!d||!t){ alert("Date and time are both required."); return; }
+  const rec={ d, t,
+    dex:+val('dex')||0, iv:+val('iv')||0,
+    bg: val('bg')===""?null:+val('bg'),
+    ml:+val('ml')||0, fort:+val('fort')||CONFIG.defaultFort, bm:+val('bm')||0 };
+  const edits=loadEdits(); edits[id]=rec; saveEdits(edits);
+  EDITING=null; renderAll();
+}
+function deleteRow(id){
+  if(!confirm("Delete this reading? Use “Reset device changes” to restore it later.")) return;
+  const edits=loadEdits(); edits[id]={__deleted:true}; saveEdits(edits);
+  EDITING=null; renderAll();
+}
+function exportJson(){
+  const rows=DATA.map(r=>({ d:r.d, t:r.t, dex:r.dex, iv:r.iv,
+    bg:(r.bg==null?null:r.bg), ml:r.ml||0, fort:r.fort||CONFIG.defaultFort, bm:r.bm||0 }));
+  const blob=new Blob([JSON.stringify(rows,null,2)], {type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`glucose-readings-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+/* ---- shared crosshair + tooltip over the timeline ---- */
+function initHover(){
+  const card=document.getElementById("timelineCard");
+  const xhair=document.getElementById("xhair"), tip=document.getElementById("tip");
+  function move(ev){
+    const rect=card.getBoundingClientRect();
+    const clientX=(ev.touches?ev.touches[0].clientX:ev.clientX);
+    const px=clientX-rect.left;
+    // nearest reading by pixel x (viewBox->px scale uses first panel svg width)
+    const svg=card.querySelector("svg"); const sr=svg.getBoundingClientRect();
+    const scale=sr.width/VBW;
+    let best=null,bd=1e9;
+    DATA.forEach(r=>{ const rx=xOf(tof(r))*scale + (sr.left-rect.left); const d=Math.abs(rx-px); if(d<bd){bd=d;best={r,rx};} });
+    if(!best||bd>60){ xhair.style.opacity=0; tip.style.opacity=0; return; }
+    xhair.style.opacity=1; xhair.style.left=best.rx+"px";
+    const r=best.r; const dt=new Date(tof(r));
+    const ageStr = BIRTH_MS!=null ? ` · ${ageLabel(tof(r))}` : "";
+    tip.innerHTML=`<div class="tt">${dt.toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}${ageStr}</div>`+
+      `<div class="row"><span><span class="dot" style="background:var(--s1)"></span>Blood sugar</span><b>${r.bg==null?'—':r.bg+' mg/dL'}</b></div>`+
+      `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>GIR</span><b>${gir(r).toFixed(1)}</b></div>`+
+      `<div class="row"><span><span class="dot" style="background:var(--s2)"></span>Drip</span><b>D${r.dex} @ ${r.iv}</b></div>`+
+      `<div class="row"><span><span class="dot" style="background:var(--s3)"></span>Formula</span><b>${r.ml||0} mL @ ${r.fort||CONFIG.defaultFort} cal</b></div>`+
+      (r.bm?`<div class="row"><span><span class="dot" style="background:var(--s6)"></span>Breast milk</span><b>${r.bm} mL</b></div>`:'');
+    tip.style.opacity=1;
+    let tx=best.rx; const tw=150;
+    tx=Math.max(tw/2+4, Math.min(rect.width-tw/2-4, tx));
+    tip.style.left=tx+"px"; tip.style.top="34px";
+  }
+  card.addEventListener("pointermove",move);
+  card.addEventListener("touchmove",move,{passive:true});
+  card.addEventListener("pointerleave",()=>{xhair.style.opacity=0;tip.style.opacity=0;});
+}
+
+/* ---- form ---- */
+function initForm(){
+  const f=document.getElementById("addForm"), msg=document.getElementById("formMsg");
+  document.getElementById("f_d").value="2026-07-05";
+  document.getElementById("f_dex").value=20; document.getElementById("f_iv").value=12;
+  document.getElementById("f_fort").value=24;
+  f.addEventListener("submit",e=>{
+    e.preventDefault();
+    const d=document.getElementById("f_d").value, t=document.getElementById("f_t").value;
+    if(!d||!t){ return; }
+    const rec={ d, t, dex:+document.getElementById("f_dex").value||20, iv:+document.getElementById("f_iv").value||0,
+      bg: document.getElementById("f_bg").value===""?null:+document.getElementById("f_bg").value,
+      ml: +document.getElementById("f_ml").value||0,
+      fort: +document.getElementById("f_fort").value||CONFIG.defaultFort,
+      bm: +document.getElementById("f_bm").value||0 };
+    const extra=loadExtra(); extra.push(rec); saveExtra(extra);
+    msg.textContent="Saved ✓ charts updated"; setTimeout(()=>msg.textContent="",3000);
+    document.getElementById("f_bg").value=""; document.getElementById("f_ml").value=""; document.getElementById("f_bm").value=""; document.getElementById("f_t").value="";
+    renderAll();
+  });
+  document.getElementById("exportBtn").addEventListener("click",()=>{
+    const extra=loadExtra();
+    const wrap=document.getElementById("exwrap"), out=document.getElementById("exOut");
+    if(!extra.length){ wrap.style.display="block"; out.value="// No device-added readings yet."; return; }
+    out.value=extra.map(r=>`  { d:"${r.d}", t:"${r.t}", dex:${r.dex}, iv:${r.iv}, bg:${r.bg==null?'null':r.bg}, ml:${r.ml}, fort:${r.fort||CONFIG.defaultFort}, bm:${r.bm||0} },`).join("\n");
+    wrap.style.display="block"; out.select();
+  });
+  document.getElementById("clearBtn").addEventListener("click",()=>{
+    if(confirm("Reset all changes made on this device — added rows, edits, and deletions? (Readings saved in the file stay.)")){ saveExtra([]); saveEdits({}); EDITING=null; renderAll(); }
+  });
+}
+
+/* ---- Simple / Detailed view toggle ---- */
+function initViewToggle(){
+  const btn=document.getElementById("detailToggle"), box=document.getElementById("detailed");
+  btn.addEventListener("click",()=>{
+    const show = box.hasAttribute("hidden");
+    if(show){ box.removeAttribute("hidden"); btn.textContent="Hide the detailed charts ▴"; btn.setAttribute("aria-expanded","true"); }
+    else { box.setAttribute("hidden",""); btn.textContent="Show the detailed charts ▾"; btn.setAttribute("aria-expanded","false"); }
+  });
+}
+
+/* ---- x-axis mode ---- */
+function initAxToggle(){
+  document.querySelectorAll(".seg").forEach(b=>b.addEventListener("click",()=>{
+    AXMODE=b.dataset.mode;
+    document.querySelectorAll(".seg").forEach(x=>x.classList.toggle("on", x.dataset.mode===AXMODE));
+    renderAll();
+  }));
+}
+
+/* ---- theme ---- */
+function initTheme(){
+  document.getElementById("themeBtn").addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme");
+    const next = cur==="dark"?"light" : cur==="light"?"dark" :
+      (matchMedia("(prefers-color-scheme: dark)").matches?"light":"dark");
+    document.documentElement.setAttribute("data-theme",next);
+    renderAll();
+  });
+}
+
+function renderAll(){
+  rebuild(); setDomain();
+  renderProgress();
+  renderTiles(); renderTimeline(); renderCumulative(); renderNutrition(); renderFluid(); renderTable();
+}
+
+document.getElementById("disc").innerHTML =
+  `Weight <b>10 lb 2 oz (4.59 kg)</b>` +
+  (BIRTH_MS!=null ? ` · born <b>${new Date(BIRTH_MS).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}</b>` : ``) +
+  `. Personal tracking aid — not medical advice.`;
+document.getElementById("wTxt").textContent="4.59 kg (10 lb 2 oz)";
+rebuild(); setDomain();
+renderAll(); initHover(); initForm(); initTheme(); initAxToggle(); initTable(); initViewToggle();
+
+/* PWA: register the service worker so the app installs & works offline */
+if("serviceWorker" in navigator){
+  addEventListener("load", ()=> navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
