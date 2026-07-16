@@ -1,0 +1,652 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aluminum Exposure — Newborn</title>
+<meta name="theme-color" content="#2a78d6">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  /* Palette shared with the glucose tracker (roles, not raw hex). */
+  :root, :root[data-theme="light"] {
+    --page:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --s1:#2a78d6;  /* blue   — administered / IV */
+    --s2:#1baf7a;  /* aqua   — cleared / expelled */
+    --s3:#eda100;  /* yellow — retained */
+    --s4:#4a3aa7;  /* violet — vaccine / IM */
+    --s5:#e87ba4;  /* magenta— dietary */
+    --good:#006300; --warning:#fab219; --warn-ink:#8a5b00; --danger:#c0392b;
+    --band: rgba(42,120,214,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181;
+      --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219; --danger:#e05a48;
+      --band: rgba(57,135,229,0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#9085e9; --s5:#d55181;
+    --good:#0ca30c; --warning:#fab219; --warn-ink:#fab219; --danger:#e05a48;
+    --band: rgba(57,135,229,0.10);
+  }
+
+  * { box-sizing:border-box; }
+  :focus-visible { outline:2px solid var(--s1); outline-offset:2px; border-radius:4px; }
+  body { margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.45; -webkit-text-size-adjust:100%; }
+  .wrap { max-width:820px; margin:0 auto; padding:20px 16px 72px; }
+  h1 { font-size:22px; margin:0 0 2px; letter-spacing:-0.01em; }
+  .sub { color:var(--ink-2); font-size:14px; margin:0 0 4px; }
+  .disc { color:var(--muted); font-size:12px; margin:8px 0 18px; }
+  h2 { font-size:16px; margin:34px 0 3px; letter-spacing:-0.005em; }
+  .h2note { color:var(--ink-2); font-size:13px; margin:0 0 12px; }
+  a { color:var(--s1); }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .tbtn { flex:none; font:inherit; font-size:12px; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .tbtn:hover { color:var(--ink); }
+  .navlinks { font-size:12.5px; margin:2px 0 0; }
+  .navlinks a { margin-right:14px; }
+
+  /* answer banner */
+  .banner { background:color-mix(in srgb, var(--s1) 8%, var(--surface)); border:1px solid var(--border);
+    border-left:3px solid var(--s1); border-radius:12px; padding:14px 16px; margin:4px 0 8px; font-size:13.5px; }
+  .banner h3 { margin:0 0 6px; font-size:14px; }
+  .banner .big { font-size:15px; font-weight:600; color:var(--ink); }
+  .banner .routes { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:9px; font-size:12.5px; color:var(--ink-2); }
+  .banner .routes b { color:var(--ink); }
+
+  .intro { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; margin:0 0 14px; font-size:13.5px; color:var(--ink-2); line-height:1.5; }
+  .intro b { color:var(--ink); }
+
+  /* controls */
+  .controls { display:grid; grid-template-columns:repeat(2,1fr); gap:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 14px; margin:6px 0 4px; }
+  @media (max-width:560px){ .controls{ grid-template-columns:1fr; } }
+  .ctl label { display:block; font-size:11.5px; color:var(--ink-2); margin-bottom:6px; }
+  .segrow { display:inline-flex; flex-wrap:wrap; border:1px solid var(--border); border-radius:9px; overflow:hidden; }
+  .seg { font:inherit; font-size:12.5px; padding:7px 12px; background:var(--page); color:var(--ink-2); border:none; cursor:pointer; }
+  .seg.on { background:var(--s1); color:#fff; }
+  .seg + .seg { border-left:1px solid var(--border); }
+  .ctl input[type=number] { font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--border);
+    border-radius:8px; background:var(--page); color:var(--ink); width:120px; }
+  .ctl .unit { font-size:12px; color:var(--muted); margin-left:6px; }
+  .ctl .hint { font-size:11.5px; color:var(--muted); margin-top:5px; }
+
+  /* tiles */
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0 4px; }
+  @media (max-width:640px){ .tiles{ grid-template-columns:repeat(2,1fr);} }
+  .tile { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 13px; }
+  .tile .lab { font-size:11.5px; color:var(--ink-2); margin-bottom:6px; }
+  .tile .val { font-size:24px; font-weight:600; letter-spacing:-0.02em; }
+  .tile .val small { font-size:12.5px; font-weight:500; color:var(--muted); letter-spacing:0; }
+  .tile .meta { font-size:11.5px; color:var(--muted); margin-top:4px; }
+  .tile.ok { border-left:3px solid var(--good); }
+  .tile.warn { border-left:3px solid var(--warning); }
+
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 12px 12px; margin-top:12px; }
+  .card h4 { margin:0 0 2px; font-size:13.5px; }
+  .card .cnote { font-size:12px; color:var(--muted); margin:0 0 8px; }
+  svg { display:block; width:100%; height:auto; overflow:visible; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; margin:8px 0 2px 4px; font-size:12px; color:var(--ink-2); }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .lk { width:14px; height:3px; border-radius:2px; display:inline-block; }
+  .lk.sq { width:11px; height:11px; border-radius:3px; }
+
+  table { border-collapse:collapse; width:100%; font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:12px; margin-top:12px; }
+  th, td { text-align:right; padding:7px 10px; white-space:nowrap; border-bottom:1px solid var(--grid); }
+  th:first-child, td:first-child { text-align:left; }
+  thead th { color:var(--ink-2); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em;
+    position:sticky; top:0; background:var(--surface); }
+  tbody tr:last-child td { border-bottom:none; }
+  td.hi { color:var(--warn-ink); font-weight:600; }
+  tfoot td { font-weight:600; border-top:1px solid var(--axis); }
+
+  .callout { border:1px solid var(--border); border-left:3px solid var(--warning); background:color-mix(in srgb, var(--warning) 6%, var(--surface));
+    border-radius:10px; padding:12px 14px; margin-top:12px; font-size:12.5px; color:var(--ink-2); }
+  .callout b { color:var(--ink); }
+  .caveats { margin-top:22px; font-size:12px; color:var(--muted); line-height:1.6; }
+  .caveats b { color:var(--ink-2); }
+  details { margin-top:8px; }
+  summary { cursor:pointer; color:var(--ink); font-weight:600; font-size:13px; }
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>Aluminum Exposure — the timeline</h1>
+      <p class="sub">How much aluminum went in intravenously, how fast his body clears it, and how that compares to the toxic threshold — and to vaccines.</p>
+      <p class="navlinks">
+        <a href="index.html">← Glucose tracker</a>
+        <a href="aluminum-exposure-research.md">Full research memo</a>
+      </p>
+    </div>
+    <button class="tbtn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+  </div>
+  <p class="disc" id="disc"></p>
+
+  <div class="banner">
+    <h3>Is the FDA's 4–5 mcg/kg/day limit an oral or an IV number?</h3>
+    <div class="big">It is <u>intravenous (parenteral)</u> — not oral.</div>
+    <div style="margin-top:6px; color:var(--ink-2)">The FDA dextrose label (§5.6) applies the limit to patients who
+      <i>“receive <b>parenteral</b> levels of aluminum at greater than 4 to 5 mcg/kg/day.”</i> Route is everything,
+      because how much aluminum actually reaches the blood depends on it:</div>
+    <div class="routes">
+      <span><b>Oral / feeds</b> ≈ 0.1–0.3% absorbed</span>
+      <span><b>Intravenous</b> ≈ 100% (bypasses the gut)</span>
+      <span><b>Intramuscular (vaccines)</b> ≈ high, but released slowly over weeks</span>
+    </div>
+  </div>
+
+  <div class="intro" id="intro"></div>
+
+  <h2>1 · His IV dextrose (D20)</h2>
+  <p class="h2note">Everything below is computed from the drip data in the tracker. Set the assumptions here.</p>
+
+  <div class="controls">
+    <div class="ctl">
+      <label>Aluminum concentration in the D20</label>
+      <div class="segrow" id="concSeg">
+        <button class="seg on" data-c="25">25 mcg/L (labeled max)</button>
+        <button class="seg" data-c="15">15 (mid)</button>
+        <button class="seg" data-c="5">5 (low)</button>
+      </div>
+      <div style="margin-top:8px">
+        custom <input type="number" id="concNum" value="25" min="0" max="25" step="1"><span class="unit">mcg/L</span>
+      </div>
+      <div class="hint">The label guarantees “no more than 25 mcg/L” — a ceiling at expiry, not a measurement. Actual lots are usually lower.</div>
+    </div>
+    <div class="ctl">
+      <label>His weight</label>
+      <input type="number" id="wt" value="4.59" min="0.5" max="10" step="0.01"><span class="unit">kg</span>
+      <div class="hint">Birth weight 10 lb 2 oz. Drives every mcg/kg figure.</div>
+      <label style="margin-top:14px">Retention scenario (how much stays vs. clears)</label>
+      <div class="segrow" id="retSeg">
+        <button class="seg" data-r="0.40">Term ~40%</button>
+        <button class="seg on" data-r="0.55">Late-preterm ~55%</button>
+        <button class="seg" data-r="0.75">Very-preterm ~75%</button>
+      </div>
+      <div class="hint">He was born at <b>36 weeks (late preterm)</b>. Preterm kidneys clear aluminum less completely; a big late-preterm baby sits between term and very-preterm. Estimate.</div>
+    </div>
+    <div class="ctl" style="grid-column:1/-1">
+      <label>Other IV additives beyond the dextrose (optional)</label>
+      <input type="number" id="addl" value="0" min="0" step="1"><span class="unit">mcg/kg/day from TPN additives</span>
+      <div class="hint">This tool counts the <b>dextrose only</b>. In full parenteral nutrition, additives — calcium gluconate, cysteine, phosphate — are usually the <b>largest</b> aluminum source. If he received any, ask the NICU pharmacist for the figure and enter it here.</div>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h4>The running timeline — administered vs. cleared vs. retained</h4>
+    <p class="cnote">Cumulative aluminum put in (blue), the portion his kidneys clear out (aqua), and the estimated body burden that lingers (yellow floor). Modeled estimate.</p>
+    <div id="chartA"></div>
+    <div class="legend">
+      <span><span class="lk" style="background:var(--s1)"></span>Cumulative administered (IV)</span>
+      <span><span class="lk" style="background:var(--s2)"></span>Estimated body burden (still in him)</span>
+      <span><span class="lk sq" style="background:var(--s3);opacity:.5"></span>Long-term retained floor</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Daily rate vs. the toxic threshold</h4>
+    <p class="cnote">Each day's IV aluminum in mcg/kg/day (bars) against the FDA parenteral limit of 4–5 mcg/kg/day (red band).</p>
+    <div id="chartB"></div>
+    <div class="legend">
+      <span><span class="lk sq" style="background:var(--s1)"></span>Daily IV aluminum (mcg/kg/day)</span>
+      <span><span class="lk" style="background:var(--danger)"></span>FDA limit 4–5 mcg/kg/day (IV)</span>
+    </div>
+  </div>
+
+  <h2>2 · Route &amp; scale — IV vs. diet vs. vaccines</h2>
+  <p class="h2note">The same milligram of aluminum is not the same exposure by every route. Bars are total mass; the note under each says how much actually reaches the blood.</p>
+  <div class="card">
+    <div id="chartC"></div>
+    <div class="legend">
+      <span><span class="lk sq" style="background:var(--s1)"></span>IV (100% absorbed)</span>
+      <span><span class="lk sq" style="background:var(--s5)"></span>Oral/diet (~0.2% absorbed)</span>
+      <span><span class="lk sq" style="background:var(--s4)"></span>IM vaccines (slow-release)</span>
+    </div>
+  </div>
+
+  <h2>3 · Vaccination schedule evaluator</h2>
+  <p class="h2note">Compare the aluminum load of a spaced-out plan against the standard schedule. Pick a preset; the table and chart update. Aluminum content is <b>brand-dependent</b> — the Hib brand toggle matters most.</p>
+
+  <div class="controls">
+    <div class="ctl">
+      <label>Schedule</label>
+      <div class="segrow" id="schedSeg">
+        <button class="seg on" data-s="spaced">My spaced plan</button>
+        <button class="seg" data-s="standard">Standard (AAP/CDC 2026)</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Hib brand</label>
+      <div class="segrow" id="hibSeg">
+        <button class="seg on" data-h="225">PedvaxHIB (225 mcg Al)</button>
+        <button class="seg" data-h="0">ActHIB / Hiberix (0 mcg Al)</button>
+      </div>
+      <div class="hint">PedvaxHIB (PRP-OMP) carries aluminum; ActHIB and Hiberix (PRP-T) carry <b>none</b>. Choosing a PRP-T Hib removes Hib’s aluminum entirely.</div>
+    </div>
+  </div>
+
+  <div class="tiles" id="schedTiles"></div>
+
+  <div class="card">
+    <h4>Aluminum per visit</h4>
+    <p class="cnote" id="schedName"></p>
+    <div id="chartD"></div>
+    <div class="legend">
+      <span><span class="lk sq" style="background:var(--s4)"></span>Aluminum injected that visit (mcg)</span>
+    </div>
+  </div>
+
+  <div class="tablewrap"><table id="schedTbl"></table></div>
+
+  <div class="callout" id="imCaveat">
+    <b>Why you can't read the vaccine mcg/kg against the 4–5 line directly.</b>
+    The FDA's 4–5 mcg/kg/day limit was set for <b>intravenous</b> products — aluminum delivered straight into the
+    bloodstream, every day, in babies whose kidneys can't keep up. Vaccine aluminum is <b>intramuscular</b>: it sits in
+    the muscle and dissolves into the blood slowly over weeks while the kidneys clear it daily. So the injected mcg/kg
+    shown above is <b>not</b> the daily amount in his blood — the peak systemic level is a small fraction of it. FDA's own
+    pharmacokinetic model (Mitkus 2011) found the body burden of aluminum across the whole schedule stays well below the
+    safety limit. A per-visit mcg/kg-vs-IV-limit comparison overstates the exposure; it's shown here only so you can see
+    the injected amounts, not as a “toxic” verdict.
+  </div>
+
+  <div class="caveats">
+    <p><b>What this tool is — and isn't.</b> A personal calculator, <b>not medical advice.</b> Your NICU team and
+      pediatrician have his real records and are the authority.</p>
+    <p><b>Key assumptions, stated plainly:</b></p>
+    <p>• The 25 mcg/L is the label's <b>maximum</b>, not a measurement of his lots — true exposure is likely lower.<br>
+       • This counts the <b>dextrose only</b>; any TPN additives (usually the bigger aluminum source) are excluded unless you enter them above.<br>
+       • The clearance / body-burden curve is a <b>literature-based estimate</b>, not a lab value. Only a serum/urine aluminum test measures him directly.<br>
+       • Vaccine aluminum is <b>intramuscular slow-release</b>, a different route from the IV drip — see the note above.<br>
+       • Vaccine per-dose amounts are typical package-insert values and vary by brand.</p>
+    <p>Sources and full reasoning: <a href="aluminum-exposure-research.md">aluminum-exposure-research.md</a>.</p>
+  </div>
+</div>
+
+<script>
+/* ===================================================================== *
+ *  CONFIG + DATA                                                        *
+ * ===================================================================== */
+const CONFIG = {
+  weightKg: 4.59,                  // 10 lb 2 oz birth weight
+  birth: "2026-07-02T08:18:00",
+  gestationWeeks: 36,              // late preterm; due 2026-07-28
+  labeledAlPerL: 25                // FDA label: "no more than 25 mcg/L"
+};
+
+/* Full weaned dataset (through 2026-07-08, IV stepped to 0). Kept in sync with the tracker. */
+const READINGS = [
+  { d:"2026-07-02", t:"08:30", dex:20, iv:0  }, { d:"2026-07-03", t:"06:00", dex:20, iv:13 },
+  { d:"2026-07-03", t:"11:00", dex:20, iv:13 }, { d:"2026-07-03", t:"14:15", dex:20, iv:13 },
+  { d:"2026-07-03", t:"20:20", dex:20, iv:13 }, { d:"2026-07-04", t:"02:30", dex:20, iv:13 },
+  { d:"2026-07-04", t:"08:30", dex:20, iv:13 }, { d:"2026-07-04", t:"14:00", dex:20, iv:12 },
+  { d:"2026-07-04", t:"17:30", dex:20, iv:13 }, { d:"2026-07-04", t:"20:30", dex:20, iv:12 },
+  { d:"2026-07-04", t:"23:30", dex:20, iv:12 }, { d:"2026-07-05", t:"02:30", dex:20, iv:12 },
+  { d:"2026-07-05", t:"05:30", dex:20, iv:12 }, { d:"2026-07-05", t:"08:30", dex:20, iv:12 },
+  { d:"2026-07-05", t:"11:34", dex:20, iv:10 }, { d:"2026-07-05", t:"14:31", dex:20, iv:10 },
+  { d:"2026-07-05", t:"17:30", dex:20, iv:10 }, { d:"2026-07-05", t:"20:30", dex:20, iv:10 },
+  { d:"2026-07-05", t:"23:30", dex:20, iv:8  }, { d:"2026-07-06", t:"02:30", dex:20, iv:8  },
+  { d:"2026-07-06", t:"05:30", dex:20, iv:8  }, { d:"2026-07-06", t:"08:30", dex:20, iv:8  },
+  { d:"2026-07-06", t:"11:30", dex:20, iv:8  }, { d:"2026-07-06", t:"14:30", dex:20, iv:6  },
+  { d:"2026-07-06", t:"17:30", dex:20, iv:4  }, { d:"2026-07-06", t:"20:30", dex:20, iv:4  },
+  { d:"2026-07-06", t:"23:30", dex:20, iv:2  }, { d:"2026-07-07", t:"02:30", dex:20, iv:2  },
+  { d:"2026-07-07", t:"05:30", dex:20, iv:2  }, { d:"2026-07-07", t:"08:30", dex:20, iv:2  },
+  { d:"2026-07-07", t:"11:38", dex:20, iv:2  }, { d:"2026-07-07", t:"14:30", dex:20, iv:1  },
+  { d:"2026-07-07", t:"17:32", dex:20, iv:0  }, { d:"2026-07-07", t:"23:30", dex:20, iv:0  },
+  { d:"2026-07-08", t:"05:00", dex:20, iv:0  }, { d:"2026-07-08", t:"08:00", dex:20, iv:0  },
+  { d:"2026-07-08", t:"11:00", dex:20, iv:0  }
+];
+
+/* Typical per-dose ELEMENTAL aluminum (mcg), from U.S. package inserts / CHOP.
+   Live/polysaccharide-conjugate vaccines carry none. */
+const VAX_AL = {
+  HepB:250, DTaP:330, Hib:225, PCV:125, HepA:250, Tdap:330, MenB:519,
+  MMR:0, Var:0, MenACWY:0, RV:0, IPV:0
+};
+const VAX_NOTE = {
+  DTaP:"330 (Daptacel) – 625 (Infanrix)", Hib:"225 (PedvaxHIB) or 0 (ActHIB/Hiberix)",
+  PCV:"125 (Prevnar)", HepB:"~250", HepA:"~250", Tdap:"330 (Adacel) – 390 (Boostrix)",
+  MenB:"250 (Trumenba) – 519 (Bexsero)"
+};
+
+/* Standard AAP/CDC 2026 — aluminum-relevant visits (individual components; combos vary). */
+const SCHED_STANDARD = [
+  { age:"Birth", mo:0,   v:["HepB"] },
+  { age:"2 mo",  mo:2,   v:["DTaP","Hib","PCV","HepB"] },
+  { age:"4 mo",  mo:4,   v:["DTaP","Hib","PCV"] },
+  { age:"6 mo",  mo:6,   v:["DTaP","Hib","PCV","HepB"] },
+  { age:"12–15 mo", mo:13, v:["Hib","PCV","HepA","MMR","Var"] },
+  { age:"18 mo", mo:18,  v:["DTaP","HepA"] }
+];
+/* Parent's proposed spaced plan (aluminum-relevant window). */
+const SCHED_SPACED = [
+  { age:"2 mo",  mo:2,   v:["Hib","DTaP"] },
+  { age:"3 mo",  mo:3,   v:["PCV"] },
+  { age:"4 mo",  mo:4,   v:["Hib","DTaP"] },
+  { age:"5 mo",  mo:5,   v:["PCV"] },
+  { age:"6 mo",  mo:6,   v:["Hib","DTaP"] },
+  { age:"7–9 mo",mo:8,   v:["PCV"] },
+  { age:"1 yr",  mo:12,  v:["Hib","PCV"] },
+  { age:"18 mo", mo:18,  v:["DTaP"] },
+  { age:"3 yr",  mo:36,  v:["MMR"] },
+  { age:"4–6 yr",mo:60,  v:["DTaP"] }
+];
+/* Approx median weight-for-age (kg), male; editable feel via mcg/kg only. */
+function weightAtMonth(mo){
+  const pts=[[0,4.59],[2,5.9],[3,6.6],[4,7.2],[5,7.7],[6,8.1],[8,8.8],[12,9.9],[13,10.1],[18,11.3],[36,14.5],[60,18.5]];
+  if(mo<=pts[0][0]) return pts[0][1];
+  for(let i=1;i<pts.length;i++){ if(mo<=pts[i][0]){ const[a,wa]=pts[i-1],[b,wb]=pts[i];
+    return wa+(wb-wa)*(mo-a)/(b-a); } }
+  return pts[pts.length-1][1];
+}
+
+/* ===================================================================== *
+ *  IV MODEL — volume integration + aluminum + clearance                *
+ * ===================================================================== */
+function tof(r){ return new Date(r.d+"T"+r.t+":00").getTime(); }
+const BIRTH_MS = new Date(CONFIG.birth).getTime();
+const rows = READINGS.map(r=>({t:tof(r), iv:r.iv, dex:r.dex})).sort((a,b)=>a.t-b.t);
+
+// Held-rate (forward-fill) integration: each rate holds until the next reading.
+function volumeSegments(){
+  const segs=[];
+  for(let i=0;i<rows.length-1;i++){
+    const hrs=(rows[i+1].t-rows[i].t)/3600e3;
+    segs.push({t0:rows[i].t, t1:rows[i+1].t, ml: rows[i].iv*hrs});
+  }
+  return segs;
+}
+function totalVolume(){ return volumeSegments().reduce((a,s)=>a+s.ml,0); }
+
+// Daily D20 volume (mL) keyed by yyyy-mm-dd, attributed to the day the segment starts.
+function volumeByDay(){
+  const by={};
+  volumeSegments().forEach(s=>{ const k=new Date(s.t0).toISOString().slice(0,10); by[k]=(by[k]||0)+s.ml; });
+  return by;
+}
+
+const state = { conc:25, wt:4.59, ret:0.55, addl:0, sched:"spaced", hib:225 };
+
+// clearance half-life (days) of the "clearable" pool by retention scenario
+function clearHalfLife(){ return state.ret>=0.75 ? 30 : state.ret>=0.55 ? 14 : 7; }
+
+/* ===================================================================== *
+ *  TINY SVG TOOLKIT                                                     *
+ * ===================================================================== */
+const VBW=760, ML=48, MR=16;
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function svgOpen(h){ return `<svg viewBox="0 0 ${VBW} ${h}" role="img">`; }
+function yGrid(ticks, y0, y1, PT, plotH, fmt){
+  const yOf=v=>PT+(y1-v)/(y1-y0)*plotH;
+  return ticks.map(v=>{ const y=yOf(v);
+    return `<line x1="${ML}" y1="${y.toFixed(1)}" x2="${VBW-MR}" y2="${y.toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`+
+      `<text x="${ML-6}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="var(--muted)">${fmt?fmt(v):v}</text>`;
+  }).join("");
+}
+function niceTicks(max, n){
+  if(max<=0) return [0];
+  const raw=max/n, mag=Math.pow(10,Math.floor(Math.log10(raw)));
+  const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=raw)||10*mag;
+  const out=[]; for(let v=0; v<=max*1.0001; v+=step) out.push(+v.toFixed(6)); return out;
+}
+
+/* ===================================================================== *
+ *  CHART A — cumulative administered vs. body burden                   *
+ * ===================================================================== */
+function renderA(){
+  const segs=volumeSegments();
+  const alPerMl = state.conc/1000;              // mcg per mL
+  // daily simulation from first reading to +56 days
+  const dayMs=86400e3;
+  const start=rows[0].t, end=rows[rows.length-1].t + 56*dayMs;
+  const nDays=Math.ceil((end-start)/dayMs);
+  const hl=clearHalfLife(), decay=Math.pow(0.5, 1/hl);
+  let cumAdmin=0, retained=0, clearable=0;
+  const series=[];
+  const byDay=volumeByDay();
+  for(let d=0; d<=nDays; d++){
+    const dayStart=start+d*dayMs;
+    const k=new Date(dayStart).toISOString().slice(0,10);
+    const mlToday=byDay[k]||0;
+    const alToday=mlToday*alPerMl;              // mcg administered that day
+    cumAdmin+=alToday;
+    retained += alToday*state.ret;
+    clearable += alToday*(1-state.ret);
+    clearable *= decay;                          // renal clearance of the clearable pool
+    const burden=retained+clearable;
+    series.push({t:dayStart, cumAdmin, burden, retained});
+  }
+  const maxY=Math.max(cumAdmin, 1)* (1/ (state.conc/25)) < 1 ? cumAdmin : cumAdmin; // keep simple
+  const yMax=Math.max(cumAdmin*1.1, 1);
+  const H=190, PT=10, PB=26, plotH=H-PT-PB;
+  const T0=start, T1=end;
+  const xOf=t=>ML+(t-T0)/(T1-T0)*(VBW-ML-MR);
+  const yOf=v=>PT+(yMax-v)/yMax*plotH;
+  const ticks=niceTicks(yMax,4);
+  let s=svgOpen(H);
+  s+=yGrid(ticks,0,yMax,PT,plotH,v=>v.toFixed(1));
+  // retained floor (area)
+  const floorPts=series.map(p=>`${xOf(p.t).toFixed(1)},${yOf(p.retained).toFixed(1)}`);
+  s+=`<polygon points="${xOf(T0).toFixed(1)},${yOf(0).toFixed(1)} ${floorPts.join(" ")} ${xOf(T1).toFixed(1)},${yOf(0).toFixed(1)}" fill="var(--s3)" opacity="0.16"/>`;
+  // cumulative administered
+  s+=`<polyline fill="none" stroke="var(--s1)" stroke-width="2.2" points="${series.map(p=>`${xOf(p.t).toFixed(1)},${yOf(p.cumAdmin).toFixed(1)}`).join(" ")}"/>`;
+  // body burden
+  s+=`<polyline fill="none" stroke="var(--s2)" stroke-width="2.2" points="${series.map(p=>`${xOf(p.t).toFixed(1)},${yOf(p.burden).toFixed(1)}`).join(" ")}"/>`;
+  // x labels: weeks
+  for(let w=0; w*7*dayMs<=T1-T0; w++){
+    const t=T0+w*7*dayMs; const x=xOf(t);
+    s+=`<line x1="${x.toFixed(1)}" y1="${(PT+plotH).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(PT+plotH+4).toFixed(1)}" stroke="var(--axis)"/>`;
+    s+=`<text x="${x.toFixed(1)}" y="${(PT+plotH+16).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--muted)">${w===0?"drip":"wk "+w}</text>`;
+  }
+  s+=`<text x="${ML-6}" y="${(PT-2).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--muted)">mcg</text>`;
+  s+="</svg>";
+  document.getElementById("chartA").innerHTML=s;
+}
+
+/* ===================================================================== *
+ *  CHART B — daily mcg/kg/day vs threshold band                        *
+ * ===================================================================== */
+function renderB(){
+  const byDay=volumeByDay();
+  const alPerMl=state.conc/1000;
+  const days=Object.keys(byDay).sort();
+  const bars=days.map(k=>{
+    const mgkg=(byDay[k]*alPerMl)/state.wt + state.addl*(byDay[k]>0?1:0);
+    return {k, v:mgkg};
+  }).filter(b=>b.v>0 || true);
+  const yMax=Math.max(5.5, ...bars.map(b=>b.v))*1.15;
+  const H=180, PT=10, PB=30, plotH=H-PT-PB;
+  const yOf=v=>PT+(yMax-v)/yMax*plotH;
+  const bw=(VBW-ML-MR)/bars.length*0.6;
+  const xOf=i=>ML+(i+0.5)/bars.length*(VBW-ML-MR);
+  let s=svgOpen(H);
+  s+=yGrid(niceTicks(yMax,4),0,yMax,PT,plotH,v=>v.toFixed(0));
+  // threshold band 4–5
+  const yb1=yOf(5), yb2=yOf(4);
+  s+=`<rect x="${ML}" y="${yb1.toFixed(1)}" width="${VBW-ML-MR}" height="${(yb2-yb1).toFixed(1)}" fill="var(--danger)" opacity="0.14"/>`;
+  s+=`<line x1="${ML}" y1="${yb2.toFixed(1)}" x2="${VBW-MR}" y2="${yb2.toFixed(1)}" stroke="var(--danger)" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+  s+=`<text x="${VBW-MR}" y="${(yb1-4).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--danger)" font-weight="600">FDA limit 4–5 mcg/kg/day (IV)</text>`;
+  bars.forEach((b,i)=>{
+    const x=xOf(i), y=yOf(b.v);
+    s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(PT+plotH-y).toFixed(1)}" rx="2" fill="var(--s1)"/>`;
+    const lab=b.k.slice(5);
+    s+=`<text x="${x.toFixed(1)}" y="${(PT+plotH+13).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="var(--muted)">${lab}</text>`;
+    if(b.v>0.05) s+=`<text x="${x.toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="var(--ink-2)">${b.v.toFixed(2)}</text>`;
+  });
+  s+=`<text x="${ML-6}" y="${(PT-2).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--muted)">mcg/kg/day</text>`;
+  s+="</svg>";
+  document.getElementById("chartB").innerHTML=s;
+}
+
+/* ===================================================================== *
+ *  CHART C — route/mass comparison                                     *
+ * ===================================================================== */
+function renderC(){
+  const ivTotal=totalVolume()*(state.conc/1000)/1000;   // mg
+  // dietary (formula) over first 6 months ~19 mg ingested; ~0.2% absorbed
+  const dietIngest=19, dietAbsorbed=dietIngest*0.002;
+  const vaxSchedule=4.4;                                  // mg IM, first 6 months (CHOP max)
+  const items=[
+    {lab:"D20 IV course (this baby)", mg:ivTotal, col:"var(--s1)", note:"~100% reaches blood"},
+    {lab:"Diet, first 6 mo (ingested)", mg:dietIngest, col:"var(--s5)", note:"only ~"+(dietAbsorbed).toFixed(2)+" mg absorbed (~0.2%)"},
+    {lab:"Vaccine schedule, first 6 mo", mg:vaxSchedule, col:"var(--s4)", note:"intramuscular, released over weeks"}
+  ];
+  const maxV=Math.max(...items.map(i=>i.mg))*1.15;
+  const H=150, rowH=40, ML2=190;
+  let s=svgOpen(H);
+  items.forEach((it,i)=>{
+    const y=14+i*rowH;
+    const w=(it.mg/maxV)*(VBW-ML2-MR);
+    s+=`<text x="0" y="${(y+13).toFixed(1)}" font-size="11.5" fill="var(--ink-2)">${esc(it.lab)}</text>`;
+    s+=`<rect x="${ML2}" y="${y.toFixed(1)}" width="${Math.max(w,1).toFixed(1)}" height="18" rx="3" fill="${it.col}"/>`;
+    s+=`<text x="${(ML2+Math.max(w,1)+6).toFixed(1)}" y="${(y+13).toFixed(1)}" font-size="11" fill="var(--ink)">${it.mg<0.1?it.mg.toFixed(3):it.mg.toFixed(2)} mg</text>`;
+    s+=`<text x="${ML2}" y="${(y+31).toFixed(1)}" font-size="9.5" fill="var(--muted)">${esc(it.note)}</text>`;
+  });
+  s+="</svg>";
+  document.getElementById("chartC").innerHTML=s;
+  document.getElementById("chartC").insertAdjacentHTML("beforeend",
+    `<p class="cnote" style="margin-top:8px">By raw mass the vaccine schedule is far larger than his IV course — but it's intramuscular slow-release, and the absorbed dietary load already rivals the whole IV course. Mass alone doesn't equal exposure; route does.</p>`);
+}
+
+/* ===================================================================== *
+ *  SCHEDULE EVALUATOR                                                   *
+ * ===================================================================== */
+function schedule(){ return state.sched==="spaced"?SCHED_SPACED:SCHED_STANDARD; }
+function alFor(v){ return v==="Hib" ? state.hib : (VAX_AL[v]||0); }
+function schedRows(){
+  return schedule().map(visit=>{
+    const al=visit.v.reduce((a,v)=>a+alFor(v),0);
+    const wt=weightAtMonth(visit.mo);
+    return {...visit, al, wt, perkg:al/wt};
+  });
+}
+function renderSchedule(){
+  const R=schedRows();
+  const total=R.reduce((a,r)=>a+r.al,0);
+  const peak=Math.max(...R.map(r=>r.perkg));
+  const peakVisit=R.find(r=>r.perkg===peak);
+  document.getElementById("schedName").textContent =
+    (state.sched==="spaced"?"My spaced plan":"Standard AAP/CDC 2026") + " — aluminum-containing visits shown.";
+  // tiles
+  document.getElementById("schedTiles").innerHTML =
+    tile("Total aluminum (shown window)", (total/1000).toFixed(2), "mg", R.length+" visits") +
+    tile("Peak single visit", Math.round(peakVisit.al), "mcg", peakVisit.age) +
+    tile("Peak injected per kg", peak.toFixed(0), "mcg/kg", "at "+peakVisit.age+" — injected, not blood level") +
+    tile("Al-containing visits", R.filter(r=>r.al>0).length, "", "of "+R.length+" total");
+  // chart D
+  const yMax=Math.max(...R.map(r=>r.al),100)*1.15;
+  const H=170, PT=10, PB=30, plotH=H-PT-PB;
+  const yOf=v=>PT+(yMax-v)/yMax*plotH;
+  const xOf=i=>ML+(i+0.5)/R.length*(VBW-ML-MR);
+  const bw=(VBW-ML-MR)/R.length*0.6;
+  let s=svgOpen(H);
+  s+=yGrid(niceTicks(yMax,4),0,yMax,PT,plotH,v=>v.toFixed(0));
+  R.forEach((r,i)=>{
+    const x=xOf(i), y=yOf(r.al);
+    s+=`<rect x="${(x-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(PT+plotH-y).toFixed(1)}" rx="2" fill="var(--s4)"/>`;
+    s+=`<text x="${x.toFixed(1)}" y="${(PT+plotH+13).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--muted)">${esc(r.age)}</text>`;
+    if(r.al>0) s+=`<text x="${x.toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="var(--ink-2)">${Math.round(r.al)}</text>`;
+  });
+  s+=`<text x="${ML-6}" y="${(PT-2).toFixed(1)}" text-anchor="end" font-size="9.5" fill="var(--muted)">mcg</text>`;
+  s+="</svg>";
+  document.getElementById("chartD").innerHTML=s;
+  // table
+  let t=`<thead><tr><th>Visit</th><th>Vaccines</th><th>Aluminum (mcg)</th><th>Weight (kg)</th><th>mcg/kg (injected)</th></tr></thead><tbody>`;
+  R.forEach(r=>{
+    t+=`<tr><td>${esc(r.age)}</td><td style="text-align:left">${r.v.map(v=>v+(alFor(v)?"":" ·0")).join(", ")}</td>`+
+       `<td>${Math.round(r.al)}</td><td>${r.wt.toFixed(1)}</td><td class="${r.perkg>4?'hi':''}">${r.perkg.toFixed(0)}</td></tr>`;
+  });
+  t+=`</tbody><tfoot><tr><td>Total</td><td></td><td>${Math.round(total)}</td><td></td><td></td></tr></tfoot>`;
+  document.getElementById("schedTbl").innerHTML=t;
+}
+
+/* ===================================================================== *
+ *  TILES + TOP-LEVEL RENDER                                             *
+ * ===================================================================== */
+function tile(lab,val,unit,meta,cls){
+  return `<div class="tile ${cls||''}"><div class="lab">${esc(lab)}</div>`+
+    `<div class="val">${val}${unit?` <small>${unit}</small>`:''}</div>`+
+    (meta?`<div class="meta">${esc(meta)}</div>`:'')+`</div>`;
+}
+function renderTiles(){
+  const vol=totalVolume();
+  const alPerMl=state.conc/1000;
+  const totalAl=vol*alPerMl;                    // mcg
+  const perKg=totalAl/state.wt;
+  const byDay=volumeByDay();
+  let peakDay=0;
+  Object.keys(byDay).forEach(k=>{ const r=(byDay[k]*alPerMl)/state.wt + state.addl*(byDay[k]>0?1:0); if(r>peakDay)peakDay=r; });
+  const retained=totalAl*state.ret;
+  const belowLimit=peakDay<4;
+  document.getElementById("tiles").innerHTML =
+    tile("Total D20 infused", Math.round(vol), "mL", "held-rate integration") +
+    tile("Total aluminum in (IV)", totalAl.toFixed(1), "mcg", "= "+(totalAl/1000).toFixed(3)+" mg, whole course") +
+    tile("Cumulative per kg", perKg.toFixed(1), "mcg/kg", "over ~4.3 drip-days") +
+    tile("Peak daily rate", peakDay.toFixed(2), "mcg/kg/day", belowLimit?"below the 4–5 limit":"at/above the 4–5 limit", belowLimit?"ok":"warn");
+}
+
+function renderIntro(){
+  const vol=totalVolume(), totalAl=vol*state.conc/1000;
+  document.getElementById("intro").innerHTML =
+    `He was born at <b>36 weeks (late preterm)</b>, treated for low blood sugar with a continuous <b>D20 (20% dextrose)</b>
+     drip through a <b>central line</b> (an intravenous route — the standard one for D20, which is too concentrated for a
+     peripheral vein). The drip ran from Jul 3 to Jul 7 and is now fully weaned. At the label's worst-case aluminum
+     concentration, the entire course delivered about <b>${totalAl.toFixed(0)} mcg (${(totalAl/1000).toFixed(3)} mg)</b> of
+     aluminum intravenously. This page lets you vary every assumption and see it against the toxic threshold — and against
+     what vaccines would add.`;
+  document.getElementById("disc").textContent =
+    "Personal calculator — not medical advice. Born 2026-07-02 · due 2026-07-28 · 36 weeks · birth weight 4.59 kg.";
+}
+
+function renderAll(){
+  renderIntro(); renderTiles(); renderA(); renderB(); renderC(); renderSchedule();
+}
+
+/* ===================================================================== *
+ *  CONTROLS                                                             *
+ * ===================================================================== */
+function segClick(id, attr, fn){
+  document.getElementById(id).addEventListener("click", e=>{
+    const b=e.target.closest(".seg"); if(!b) return;
+    [...b.parentElement.children].forEach(c=>c.classList.remove("on"));
+    b.classList.add("on"); fn(b.getAttribute(attr)); renderAll();
+  });
+}
+segClick("concSeg","data-c",v=>{ state.conc=+v; document.getElementById("concNum").value=v; });
+segClick("retSeg","data-r",v=>{ state.ret=+v; });
+segClick("schedSeg","data-s",v=>{ state.sched=v; });
+segClick("hibSeg","data-h",v=>{ state.hib=+v; });
+document.getElementById("concNum").addEventListener("input",e=>{
+  state.conc=Math.max(0,+e.target.value||0);
+  document.querySelectorAll("#concSeg .seg").forEach(s=>s.classList.toggle("on", +s.getAttribute("data-c")===state.conc));
+  renderAll();
+});
+document.getElementById("wt").addEventListener("input",e=>{ state.wt=Math.max(0.5,+e.target.value||4.59); renderAll(); });
+document.getElementById("addl").addEventListener("input",e=>{ state.addl=Math.max(0,+e.target.value||0); renderAll(); });
+
+/* theme toggle (matches the tracker) */
+(function(){
+  const KEY="trackerTheme";
+  const saved=localStorage.getItem(KEY); if(saved) document.documentElement.setAttribute("data-theme",saved);
+  document.getElementById("themeBtn").addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme");
+    const sysDark=matchMedia("(prefers-color-scheme: dark)").matches;
+    const next=cur? (cur==="dark"?"light":"dark") : (sysDark?"light":"dark");
+    document.documentElement.setAttribute("data-theme",next); localStorage.setItem(KEY,next);
+  });
+})();
+
+renderAll();
+</script>

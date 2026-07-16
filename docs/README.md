@@ -33,6 +33,8 @@ gets the blood-drop icon, opens full-screen with no browser chrome, and works of
 | File | What it is |
 |---|---|
 | [`index.html`](index.html) | The app. Open in any browser — no install needed; charts, a full data table, and a form to log readings. |
+| [`aluminum.html`](aluminum.html) | Interactive **aluminum exposure** tool — how much aluminum the D20 IV delivered, how his body clears it, vs. the FDA toxic threshold, and a vaccination-schedule evaluator. Same self-contained style as the tracker. |
+| [`aluminum-exposure-research.md`](aluminum-exposure-research.md) | The research memo behind the aluminum tool: the math, the oral-vs-IV answer, elimination, the IV-vs-vaccine comparison, and sources. |
 | [`readings.csv`](readings.csv) | Plain-text master log (open in Excel / Sheets): `date, time, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml, fortification_kcal_oz, breast_milk_ml`. |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | PWA plumbing — app name, icon, and offline service worker. |
 | `README.md` | This page. |
@@ -135,6 +137,22 @@ line? Short version: the general rule caps peripheral dextrose at **12.5%**, but
 randomized trial in hypoglycemic newborns found **20% glucose can be infused peripherally
 as safely as 15%** — so his peripheral D20 is an evidence-backed choice, at the cost of more
 frequent site checks and cannula changes.
+
+## Aluminum exposure from the IV
+
+The FDA dextrose label warns that the solution "contains aluminum that may be toxic." The
+interactive [**`aluminum.html`**](aluminum.html) tool answers, from the same drip data, how
+much aluminum actually went in intravenously (**~25 mcg at the label's worst-case
+concentration — below the FDA's 4–5 mcg/kg/day threshold**), models how his body clears it,
+and compares it by route to diet and to vaccines — including an evaluator for a spaced-out
+vaccination schedule. The companion [**`aluminum-exposure-research.md`**](aluminum-exposure-research.md)
+memo carries the full reasoning and sources, and answers the key question directly: the FDA's
+4–5 mcg/kg/day limit is an **intravenous** number, not an oral one.
+
+> Note on the IV route: he in fact received his D20 through a **central line**, the standard
+> route for 20% dextrose — so the peripheral-vs-central note above describes an alternative
+> that didn't apply to him. For aluminum, central and peripheral are equivalent (both are
+> intravenous).
 
 ## Sources
 
