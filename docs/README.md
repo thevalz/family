@@ -1,22 +1,22 @@
-# Newborn Glucose Tracking
+# Newborn Health Dashboard
 
-A small, self-contained tool to understand the relationship between **IV dextrose**,
-**formula feeds**, and **blood sugar** over time for a newborn being treated for
-hypoglycemia in the NICU — and to watch the dextrose drip being weaned as he takes
-over on his own.
+A small, self-contained set of pages for a newborn treated for hypoglycemia in the NICU:
 
-This is **not** a "blood sugar below the danger line" chart. It's an intake ↔ response
-picture: how much glucose is going in (IV + feeds), how hard the drip is working (GIR),
-and how his sugar responds.
+- **[`index.html`](index.html) — the aluminum exposure dashboard** (the landing page): how much
+  aluminum the IV dextrose delivered, how his body clears it, how that compares to the FDA toxic
+  threshold, and a side-by-side vaccination-schedule comparison.
+- **[`glucose.html`](glucose.html) — the glucose tracker**: the relationship between **IV
+  dextrose**, **formula feeds**, and **blood sugar** over time, and the weaning of the drip.
 
-> Personal tracking aid — **not medical advice.** The NICU team's readings and orders
-> are always the authority.
+Both are linked from each other's header. Everything is **not medical advice** — the NICU
+team's readings and orders are always the authority.
 
 ## Install it on your iPad (or phone) as an app
 
 This folder is a **GitHub Pages** site and an installable **PWA**. Once Pages is enabled
-(see below), open the published URL in Safari, then **Share → Add to Home Screen**. It
-gets the blood-drop icon, opens full-screen with no browser chrome, and works offline.
+(see below), open the published URL in Safari, then **Share → Add to Home Screen**. It opens
+full-screen with no browser chrome and works offline; the home-screen app opens the dashboard,
+and the glucose tracker is one tap away in the header (or at `/glucose.html`).
 
 **Enabling GitHub Pages (one-time, in the GitHub website):**
 1. Repo **Settings → Pages**.
@@ -32,16 +32,17 @@ gets the blood-drop icon, opens full-screen with no browser chrome, and works of
 
 | File | What it is |
 |---|---|
-| [`index.html`](index.html) | The app. Open in any browser — no install needed; charts, a full data table, and a form to log readings. |
-| [`aluminum.html`](aluminum.html) | Interactive **aluminum exposure** tool — how much aluminum the D20 IV delivered, how his body clears it, vs. the FDA toxic threshold, and a vaccination-schedule evaluator. Same self-contained style as the tracker. |
-| [`aluminum-exposure-research.md`](aluminum-exposure-research.md) | The research memo behind the aluminum tool: the math, the oral-vs-IV answer, elimination, the IV-vs-vaccine comparison, and sources. |
+| [`index.html`](index.html) | **The landing page — the aluminum exposure dashboard.** Timeline of aluminum administered vs. cleared vs. the toxic threshold, route/scale comparison, and a side-by-side plan-vs-standard vaccination-schedule comparison. |
+| [`glucose.html`](glucose.html) | **The glucose tracker.** Charts, a full data table, and a form to log readings (blood sugar, IV dextrose/GIR, feeds). |
+| [`aluminum-exposure-research.md`](aluminum-exposure-research.md) | The research memo behind the dashboard: the math, the oral-vs-IV answer, elimination, the IV-vs-vaccine comparison, the schedule evaluation, the literature, and sources. |
 | [`readings.csv`](readings.csv) | Plain-text master log (open in Excel / Sheets): `date, time, dextrose, iv_rate_ml_per_hr, blood_sugar_mg_dl, formula_ml, fortification_kcal_oz, breast_milk_ml`. |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | PWA plumbing — app name, icon, and offline service worker. |
 | `README.md` | This page. |
 
-The app renders from an embedded `READINGS` array (a static page can't read a local CSV
-directly), so `readings.csv` and that array are the same data kept in sync — edit the CSV
-to confirm/correct values and the array is updated to match.
+Both pages render from an embedded `READINGS` array (a static page can't read a local CSV
+directly), so `readings.csv` and those arrays are the same data kept in sync — edit the CSV
+to confirm/correct values and the arrays are updated to match. (`glucose.html` and `index.html`
+each embed the same `READINGS`.)
 
 ## The baby
 
@@ -50,7 +51,7 @@ to confirm/correct values and the array is updated to match.
 - Fed **Enfamil Gentlease** (fortified to 20, then 24 kcal/oz), with **breast milk**
   being introduced, while on a continuous **D20** (20% dextrose) IV drip.
 
-Weight and birth time are the two constants at the top of `index.html`. Weight drives
+Weight and birth time are the two constants at the top of `glucose.html`. Weight drives
 every GIR number; birth time drives the **hours-of-life** axis — toggle the timeline
 between **Clock time** and **Hours of life**, and the clinically meaningful **48h** and
 **72h** boundaries show as vertical marks. (48h is when the weaning thresholds step up
@@ -80,7 +81,7 @@ Source: Giouleka et al., *Children* 2023 (guideline comparison).
 
 **Formula's contribution** — feed volume × the formula's carbohydrate per 100 mL gives
 the glucose from feeds. Fat and protein feed the gluconeogenesis machinery that steadies
-his sugar between feeds. The formula profile is a single editable block in `index.html`
+his sugar between feeds. The formula profile is a single editable block in `glucose.html`
 — swap in the real product's label numbers to make the nutrition view exact.
 
 **Why D20 can run in a peripheral line** — the usual bedside rule is that dextrose above
@@ -113,7 +114,7 @@ Two ways, use whichever is easier in the moment:
    blood sugar, formula mL, dextrose %, IV rate. It saves to that device instantly and
    redraws every chart. Your phone remembers entries between visits.
 2. **In the file (permanent, kept in git).** Add one line to the `READINGS` list near the
-   top of `index.html`:
+   top of `glucose.html` (and the matching array in `index.html`):
    ```js
    { d:"2026-07-06", t:"05:30", dex:20, iv:12, bg:58, ml:25, fort:24, bm:10 },
    ```

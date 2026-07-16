@@ -118,7 +118,11 @@ a lifetime total: toxicity is about **administering faster than the body can cle
   dominate the toxicity literature. His renal clearance is much closer to a term infant's than
   to a 28-weeker's. The honest read is *"a real reason for care, not a reason for alarm"* — and
   the tool lets you move the retention assumption between term (~40%) and very-preterm (~75%)
-  to see the range.
+  to see the range. (That the immature brain has genuine **windows of vulnerability** is not in
+  dispute — it's well described for hypoxic-ischemic and excitotoxic injury (Johnston 1995,
+  among the papers you shared)[^johnston]; being preterm is exactly why his exposure is worth
+  quantifying carefully rather than dismissing. What that literature does *not* establish is an
+  aluminum-specific injury mechanism at these doses.)
 
 **Putting the three together for his case:** the daily *administration* rate peaked at
 ~1.65 mcg/kg/day (labeled max) — below the 4–5 mcg/kg/day line — for a **short ~4.3-day
@@ -222,27 +226,77 @@ alone, HepB deferred):
    months of susceptibility (of well-established risk). The schedule is yours to choose; this note
    is only meant to make the aluminum side of the ledger accurate.
 
-## 7. The papers you shared
+## 7. The aluminum–autism question — reading the literature you shared
 
-You attached several sources; here is a straight read of each.
+You've gathered a real cross-section of the aluminum-and-autism literature, and it deserves a
+straight, rigorous read rather than a wave-off. The single most useful lens is the **hierarchy
+of evidence** — not all studies answer the causal question equally well:
 
+> **Strongest → weakest for "does X cause Y":** randomized trials → large **individual-level**
+> cohort studies (each child's own exposure linked to their own outcome) → **ecological**
+> correlations (population averages, no individual data) → uncontrolled tissue/case series →
+> mechanistic and animal plausibility.
+
+The papers you shared sit mostly in the **lower** tiers; the study that sits highest — the
+Danish cohort (§5) — points the other way. Here is each, on its merits.
+
+- **Tomljenovic & Shaw (2011), "Do aluminum vaccine adjuvants contribute to the rising
+  prevalence of autism?"** (*J. Inorg. Biochem.*).[^tomshaw] This is the most-cited paper for the
+  vaccine-aluminum→autism claim. What it did: took **population-level** autism-prevalence numbers
+  (US Dept. of Education, 1991–2008) and correlated them with the cumulative aluminum in the CDC
+  vaccine schedule, plus cross-country comparisons, reporting a strong correlation (r ≈ 0.92) and
+  applying "Hill's criteria" to argue causation. Why it can't carry that weight: it is an
+  **ecological correlation** — it never links any individual child's aluminum to that child's
+  outcome, so it is wide open to the **ecological fallacy.** Over 1991–2008 essentially everything
+  that rose with time correlates with autism *diagnoses* at r ≈ 0.9 (household internet, organic
+  food sales, bottled water) — the classic illustration of why time-trend correlation isn't cause.
+  And autism **diagnosis** rose largely because the diagnostic criteria broadened (DSM-III-R →
+  DSM-IV) and ascertainment improved, not necessarily because the underlying condition became more
+  common. The authors are also not neutral: Shaw and Tomljenovic's aluminum-adjuvant program has
+  been funded by foundations that campaign against vaccines, and **several of their subsequent
+  aluminum-adjuvant animal papers were retracted or corrected** over data-integrity concerns. Most
+  decisively, the hypothesis this paper raises was **testable at the individual level and has since
+  been tested** — the Danish cohort of 1.2 million children (§5) found **no association**.
+  Individual-level data beats an ecological correlation every time.
+- **Sealey, Bagasra et al. (2016), "Environmental factors in the development of autism spectrum
+  disorders"** (*Environ. Int.*).[^sealey] A **review** that catalogs many candidate environmental
+  contributors to ASD — pesticides, phthalates, PCBs, solvents, air pollutants, fragrances,
+  glyphosate, heavy metals — with aluminum-in-vaccines as **one item on a long, speculative list.**
+  As a narrative review it *surveys hypotheses*; it does not test them or establish causation for
+  any of them, aluminum included. Useful as a map of what's been proposed; not evidence that any
+  particular factor (or aluminum) is causal.
 - **Mold, Umar, King & Exley (2018), "Aluminium in brain tissue in autism"** (*J. Trace Elem.
-  Med. Biol.*).[^mold] This is the paper most often cited for an aluminum–autism link. What it
-  actually did: measured aluminum in brain tissue from **5 deceased donors** with autism (plus
-  fluorescence imaging in 10), and reported high values. Its real limitations are serious and
-  widely noted: **n = 5**, **no matched control group** in the quantitative measurements (so
-  "high compared to what?" is unanswered), aluminum measurement in brain tissue is prone to
-  contamination, and — most fundamentally — **finding a substance in tissue cannot show it caused
-  the condition.** The paper's own introduction leans on a correlation between rising vaccine use
-  and rising autism diagnoses, which is an ecological correlation, not evidence of causation
-  (autism *diagnosis* has risen for many well-documented reasons). The lab that produced it has
-  been repeatedly criticized on methodology. It is a hypothesis-generating case series, and the
-  major review bodies (AAP, CDC) do not treat it as evidence that aluminum causes autism.[^aap]
-  It deserves to be read — and read critically.
+  Med. Biol.*).[^mold] *(You uploaded this one twice — it's a single paper.)* It measured aluminum
+  in brain tissue from **5 deceased donors** with autism (imaging in 10) and reported high values.
+  Its limitations are serious and widely noted: **n = 5**, **no matched control group** in the
+  quantitative arm (so "high compared to whom?" is unanswered), brain-aluminum measurement is
+  contamination-prone, and — fundamentally — **finding a substance in tissue cannot show it caused
+  the condition**, nor does it establish where the aluminum came from (diet, air, and vaccines all
+  contribute over a lifetime). A hypothesis-generating case series; the major review bodies (AAP,
+  CDC) do not treat it as evidence of causation.[^aap]
+- **Johnston (1995), "Neurotransmitters and vulnerability of the developing brain"** (*Brain &
+  Dev.*).[^johnston] This one is different in kind — a **legitimate, mainstream** developmental-
+  neuroscience review, and it isn't about aluminum. Its point is that the immature brain passes
+  through **windows of selective vulnerability** (the germinal matrix to hemorrhage in the
+  preterm infant, developing white matter to injury, NMDA/glutamate receptors to excitotoxicity
+  during hypoxia-ischemia). It's a sound argument for taking the *developing/preterm brain*
+  seriously — which is exactly why this note flags his **36-week status** rather than waving it
+  away (see §4). But it speaks to *susceptibility in general* (chiefly hypoxic-ischemic and
+  excitotoxic injury); it offers **no aluminum-specific mechanism** and shouldn't be read as one.
 - **AAP 2026 Immunization Schedule** — used above as the source for the standard schedule.
 - **Delgado-León et al. (2018), apoptosis in pancreatic β-cells from arsenic + atorvastatin in
   diabetic rats** — reviewed, but it concerns **arsenic and a cholesterol drug in a diabetes
   model**, not aluminum and not neurodevelopment. It doesn't bear on this question.
+
+**The honest synthesis.** The case *for* a vaccine-aluminum→autism link rests on ecological
+correlations (Tomljenovic & Shaw; the vaccine strand of Sealey/Bagasra), an uncontrolled tissue
+series (Mold/Exley), and mechanistic/animal plausibility. The case is weakened by the fact that
+when the hypothesis was finally tested with **individual-level** data on **1.2 million children**,
+the association **wasn't there** (§5). That doesn't make aluminum harmless in every context — the
+FDA's parenteral warning is real, and the preterm brain is genuinely a vulnerable system (Johnston)
+— but it does mean the specific claim that aluminum-adjuvanted vaccines cause autism is **not
+supported by the best available evidence.** Read the papers; weigh them by what kind of question
+each can actually answer.
 
 ## 8. What to ask your care team
 
@@ -321,7 +375,31 @@ demonstrated benefit and prolong susceptibility. *(Confidence: high; professiona
 consensus.)*
 
 [^mold]: Mold M., Umar D., King A., Exley C. *Aluminium in brain tissue in autism.* **J. Trace
-Elem. Med. Biol.** 2018;46:76–82 (the paper you shared). Case series, n = 5 (imaging in 10), no
-matched controls in the quantitative arm; hypothesis-generating, cannot establish causation, and
-the producing lab has drawn substantial methodological criticism. *(Confidence: high on the
-description of its limits.)*
+Elem. Med. Biol.** 2018;46:76–82 (the paper you shared, twice). Case series, n = 5 (imaging in
+10), no matched controls in the quantitative arm; hypothesis-generating, cannot establish
+causation, and the producing lab has drawn substantial methodological criticism. *(Confidence:
+high on the description of its limits.)*
+
+[^tomshaw]: Tomljenovic L., Shaw C.A. *Do aluminum vaccine adjuvants contribute to the rising
+prevalence of autism?* **J. Inorg. Biochem.** 2011;105(11):1489–99 (the paper you shared).
+**Ecological correlation** of population ASD prevalence vs. schedule aluminum (US 1991–2008,
+r ≈ 0.92; cross-country), interpreted via Hill's criteria. *Positioning:* population-level
+correlation cannot establish individual causation (ecological fallacy); confounded by
+diagnostic-criteria broadening and secular trends; authors have anti-vaccine-foundation funding,
+and later aluminum-adjuvant animal papers from this group were retracted/corrected. Contradicted
+by individual-level cohort data (Andersson 2025). *(Confidence: high that its design cannot
+support a causal claim.)*
+
+[^sealey]: Sealey L.A., Hughes B.W., … Bagasra O. *Environmental factors in the development of
+autism spectrum disorders.* **Environ. Int.** 2016;88:288–98 (the paper you shared). Narrative
+**review** cataloging many hypothesized environmental ASD contributors (pesticides, phthalates,
+PCBs, solvents, air pollutants, fragrances, glyphosate, heavy metals incl. aluminum adjuvants).
+*Positioning:* surveys hypotheses; does not test causation for aluminum or any single factor.
+*(Confidence: high that it is hypothesis-level, not causal evidence.)*
+
+[^johnston]: Johnston M.V. *Neurotransmitters and vulnerability of the developing brain.* **Brain
+Dev.** 1995;17(5):301–6 (the paper you shared). Mainstream review of developmental
+selective-vulnerability windows (germinal-matrix hemorrhage, periventricular leukomalacia,
+NMDA/glutamate excitotoxicity in hypoxia-ischemia). *Positioning:* supports taking the
+preterm/immature brain seriously in general; **not** about aluminum and offers no
+aluminum-specific mechanism. *(Confidence: high; a well-regarded neuroscience review.)*

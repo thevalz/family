@@ -1,7 +1,7 @@
 {
-  "name": "Newborn Glucose Tracker",
-  "short_name": "Glucose",
-  "description": "Track a newborn's blood sugar, IV dextrose (GIR), and feeds, and watch the drip wean.",
+  "name": "Newborn Health Dashboard",
+  "short_name": "Newborn",
+  "description": "Aluminum exposure dashboard plus the newborn glucose/IV tracker.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
