@@ -238,13 +238,21 @@
   <p class="h2note">Both schedules are shown together for comparison. Aluminum content is <b>brand-dependent</b> — the Hib brand toggle below applies to both.</p>
 
   <div class="controls">
-    <div class="ctl" style="grid-column:1/-1">
+    <div class="ctl">
       <label>Hib brand (applies to both schedules)</label>
       <div class="segrow" id="hibSeg">
         <button class="seg on" data-h="225">PedvaxHIB (225 mcg Al)</button>
         <button class="seg" data-h="0">ActHIB / Hiberix (0 mcg Al)</button>
       </div>
       <div class="hint">PedvaxHIB (PRP-OMP) carries aluminum; ActHIB and Hiberix (PRP-T) carry <b>none</b>. Choosing a PRP-T Hib removes Hib’s aluminum from every Hib dose in <b>both</b> plans.</div>
+    </div>
+    <div class="ctl">
+      <label>Reference line for the per-kg column</label>
+      <div class="segrow" id="refSeg">
+        <button class="seg on" data-ref="fda">FDA IV limit (4–5)</button>
+        <button class="seg" data-ref="pdl">Weight-scaled pediatric limit</button>
+      </div>
+      <div class="hint">Which line the <b>mcg/kg</b> column is flagged against. The second, a weight-scaled “Pediatric Dose Limit” (~10→40 mcg/kg by age; Lyons-Weiler 2018), is a <b>contested minority framework</b> — see the note below.</div>
     </div>
   </div>
 
@@ -284,6 +292,19 @@
     pharmacokinetic model (Mitkus 2011) found the body burden of aluminum across the whole schedule stays well below the
     safety limit. A per-visit mcg/kg-vs-IV-limit comparison overstates the exposure; it's shown here only so you can see
     the injected amounts, not as a “toxic” verdict.
+  </div>
+
+  <div class="callout" id="twoFrameworks" style="border-left-color:var(--s4)">
+    <b>Two frameworks for “how much injected aluminum is too much.”</b>
+    <b>(A) Mainstream / regulatory</b> — track the <b>modeled body burden</b> over time; because IM aluminum is
+    slow-release, FDA's own model (Mitkus 2011) and pediatric-ID reviews (Principi &amp; Esposito 2018) find the whole
+    schedule stays <b>below</b> the safety level. <b>(B) The weight-scaled-limit school</b> (Lyons-Weiler 2018;
+    McFarland/Thomas 2020) scales a limit by body weight and reports the standard schedule spends
+    <b>~24% of days “over limit” (birth–2 yr) vs. ~2–5% for a spaced plan</b> — the main quantitative argument for
+    spacing. But that limit is scaled from <b>oral</b> exposure data applied to <b>injected</b> aluminum (a ~1000×
+    cross-route mismatch), it isn't used by regulators, and those papers come from the plan's own advocates. Whichever
+    dose model is right, the largest <b>outcome</b> study — 1.2M children (Andersson 2025) — found <b>no</b> increased
+    neurodevelopmental risk. Full reasoning and sources in the <a href="aluminum-exposure-research.md">memo</a>.
   </div>
 
   <div class="caveats">
@@ -401,7 +422,18 @@ function volumeByDay(){
   return by;
 }
 
-const state = { conc:25, wt:4.59, ret:0.55, addl:0, hib:225 };
+const state = { conc:25, wt:4.59, ret:0.55, addl:0, hib:225, ref:"fda" };
+// Reference the per-kg schedule column is flagged against.
+//  fda: the FDA IV daily limit (4-5 mcg/kg/day) — a route-mismatched reference, shown for context.
+//  pdl: Lyons-Weiler 2018 weight-scaled "Pediatric Dose Limit" (~10 mcg/kg at birth -> ~40 at 2y) — contested.
+function refLimitAt(mo){
+  if(state.ref==="fda") return 5;
+  const pts=[[0,10.3],[24,37.5],[60,44]];  // age(mo) -> mcg/kg (Lyons-Weiler & Ricketson 2018)
+  if(mo<=pts[0][0]) return pts[0][1];
+  for(let i=1;i<pts.length;i++){ if(mo<=pts[i][0]){ const[a,va]=pts[i-1],[b,vb]=pts[i];
+    return va+(vb-va)*(mo-a)/(b-a); } }
+  return pts[pts.length-1][1];
+}
 
 // clearance half-life (days) of the "clearable" pool by retention scenario
 function clearHalfLife(){ return state.ret>=0.75 ? 30 : state.ret>=0.55 ? 14 : 7; }
@@ -619,10 +651,12 @@ function renderSchedule(){
   }
 
   // detail tables
+  const refName = state.ref==="fda" ? "vs FDA IV 4–5" : "vs pediatric limit";
   const tbl=(R)=>{
-    let t=`<thead><tr><th>Visit</th><th>Vaccines</th><th>Al (mcg)</th><th>mcg/kg</th></tr></thead><tbody>`;
-    R.forEach(r=>{ t+=`<tr><td>${esc(r.age)}</td><td style="text-align:left">${r.v.map(v=>v+(alFor(v)?"":" ·0")).join(", ")}</td>`+
-      `<td>${Math.round(r.al)}</td><td class="${r.perkg>4?'hi':''}">${r.perkg.toFixed(0)}</td></tr>`; });
+    let t=`<thead><tr><th>Visit</th><th>Vaccines</th><th>Al (mcg)</th><th>mcg/kg <small style="font-weight:400;color:var(--muted)">${refName}</small></th></tr></thead><tbody>`;
+    R.forEach(r=>{ const over=r.perkg>refLimitAt(r.mo);
+      t+=`<tr><td>${esc(r.age)}</td><td style="text-align:left">${r.v.map(v=>v+(alFor(v)?"":" ·0")).join(", ")}</td>`+
+      `<td>${Math.round(r.al)}</td><td class="${r.al>0&&over?'hi':''}">${r.perkg.toFixed(0)}</td></tr>`; });
     t+=`</tbody><tfoot><tr><td>Total</td><td></td><td>${Math.round(R.reduce((a,r)=>a+r.al,0))}</td><td></td></tr></tfoot>`;
     return t;
   };
@@ -685,6 +719,7 @@ function segClick(id, attr, fn){
 segClick("concSeg","data-c",v=>{ state.conc=+v; document.getElementById("concNum").value=v; });
 segClick("retSeg","data-r",v=>{ state.ret=+v; });
 segClick("hibSeg","data-h",v=>{ state.hib=+v; });
+segClick("refSeg","data-ref",v=>{ state.ref=v; });
 document.getElementById("concNum").addEventListener("input",e=>{
   state.conc=Math.max(0,+e.target.value||0);
   document.querySelectorAll("#concSeg .seg").forEach(s=>s.classList.toggle("on", +s.getAttribute("data-c")===state.conc));
