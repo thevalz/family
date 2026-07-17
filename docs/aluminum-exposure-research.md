@@ -226,6 +226,67 @@ alone, HepB deferred):
    months of susceptibility (of well-established risk). The schedule is yours to choose; this note
    is only meant to make the aluminum side of the ledger accurate.
 
+### How much injected aluminum is "too much"? Two frameworks
+
+Under the hood of the whole vaccine-aluminum debate is a single unsettled question: **what
+number should a vaccine dose be compared against?** There are two camps, and the papers you've
+gathered are mostly the second one. It's worth seeing both clearly.
+
+**Framework A — modeled body burden (mainstream / regulatory).** Aluminum injected into muscle
+is released *slowly* and cleared continuously, so the right thing to track is the **whole-body
+burden over time**, not the size of a single dose. FDA's pharmacokinetic model (Mitkus 2011)
+does exactly that and finds the burden across the entire schedule stays **below** the safety
+level derived from the ATSDR minimal-risk level.[^mitkus] A 2018 *Vaccine* review by **Principi
+& Esposito** — mainstream pediatric-infectious-disease authors — reaches the same bottom line:
+**"no apparent reason exists to support the elimination of Al from vaccines for fear of
+neurotoxicity"** (they flag only the separate, adult, macrophagic-myofasciitis / chronic-fatigue
+question as unsettled).[^principi] On this view, comparing a per-dose µg/kg to a *daily* limit is
+simply the wrong comparison.
+
+**Framework B — weight-scaled dose limit (the minority / "Pediatric Dose Limit" school).** A
+group centered on IPAK (Lyons-Weiler) and the Exley/CHD circle argues the opposite: take a
+**safe level and scale it to a baby's body weight**, and the schedule looks alarming.
+- **Lyons-Weiler & Ricketson (2018)** derive a weight-corrected **"Pediatric Dose Limit"** and
+  show that an 850 µg vaccine dose is ~**150 µg/kg at 2 months** — far above the FDA 4–5 µg/kg/day
+  IV figure and above their own derived pediatric limit (~10 µg/kg at birth rising to ~37 µg/kg
+  at 2 years).[^lwr] The tool's schedule section can now overlay this line so you can see it.
+- **McFarland, Thomas & Lyons-Weiler (2020)** run a retention model over three schedules —
+  standard CDC, a low-/no-aluminum CDC, and **Dr. Paul Thomas's "Vaccine Friendly Plan," which is
+  essentially the spaced plan you're considering** — and report a **"% of days over limit":**
+  roughly **24% of days (birth–2 yr) for CDC vs. ~2–5% for the spaced plan.**[^mcfarland] Taken at
+  face value, that is the strongest quantitative argument *for* spacing.
+
+**Why they reach opposite conclusions.** Two real methodological forks:
+1. **Which safe level?** Framework B scales a limit that was itself derived from **oral/dietary**
+   aluminum in **adult animals** (the ATSDR/JECFA MRL) and applies it to **injected** aluminum.
+   Oral and injected aluminum differ ~1000-fold in absorption, so mainstream toxicology considers
+   this cross-route scaling invalid — it's the same category error as reading a vaccine's µg/kg
+   against the IV drip limit.
+2. **Dose vs. burden.** Framework B compares each **dose** to a **daily** limit (a bolus-vs-rate
+   mismatch); Framework A models the **slow-release burden** the body actually carries.
+
+**Provenance matters here, and cuts both ways.** Framework B's papers cluster in a few journals
+and authors (IPAK; the Exley group; and, in McFarland 2020, **Paul Thomas himself — the author of
+the very "Vaccine Friendly Plan" being evaluated**, whose Oregon medical license was suspended in
+2020 over his vaccine practices); McFarland 2020 also carries a **published 2021 correction.**
+That doesn't make their concern illegitimate — under-study of injected-aluminum kinetics in
+infants is a fair point — but it does mean these are advocacy-adjacent analyses built on a
+contested limit, not independent confirmation.
+
+**The tie-breaker is outcomes, not models.** You don't have to adjudicate the dose math to get an
+answer, because the hypothesis has been tested at the level that matters — **actual children,
+actual diagnoses.** The Danish cohort of **1.2 million** (Andersson 2025) linked each child's
+cumulative vaccine aluminum to 50 chronic conditions and found **no increased risk**, including
+neurodevelopmental (§5).[^andersson] Framework B's own community published a **critique** of that
+study — Crépeaux et al. 2026, *"a call for science,"* co-authored by Shaw, Tomljenovic, Exley,
+Shoenfeld, Lyons-Weiler and Children's Health Defense figures — raising objections about exposure
+classification, confounding, and conflicts of interest.[^callforscience] Some of those points are
+worth engaging; none, in the mainstream reading, overturns a null result across a million
+children. **So: if the spacing question is about aluminum specifically, Framework B says spacing
+helps against a limit most toxicologists reject, and the best outcome data finds nothing to
+prevent in the first place.** Which is why this stays a values-and-logistics conversation for you
+and your pediatrician — the disease-timing trade-off is the concrete part.
+
 ## 7. The aluminum–autism question — reading the literature you shared
 
 You've gathered a real cross-section of the aluminum-and-autism literature, and it deserves a
@@ -363,10 +424,39 @@ PMID 40658954. ~1.2 million Danish children; cumulative vaccine aluminum in the 
 50 chronic disorders; no increased risk, neurodevelopmental HR 0.93 (0.90–0.97). *(Confidence:
 high; largest cohort to date. Debated by aluminum-skeptic authors — see next.)*
 
-[^callforscience]: Critique of the Danish cohort (aluminum-skeptic commentary, *J. Trace Elem.
-Med. Biol.* 2025, "Aluminium adjuvants and childhood health: a call for science"). Raises
-design/analysis objections. *(Included for balance; does not, in the mainstream reading,
-overturn the cohort's null result.)*
+[^callforscience]: Crépeaux G., Hammond J.R., Handley J.B., Hooker B., Jablonowski K., Luján L.,
+Lyons-Weiler J., Nosten-Bertrand M., Shaw C.A., Shoenfeld Y., Tomljenovic L., Exley C.
+*Aluminium adjuvants and childhood health: a call for science.* **J. Trace Elem. Med. Biol.**
+2026;93:127810 (the paper you shared). A **critique of the Andersson 2025 Danish cohort**,
+objecting on aluminum toxicology, cohort design/statistics, and conflicts of interest.
+*Positioning:* a position paper by the aluminum-skeptic author network (incl. Children's Health
+Defense affiliates). Some methodological points merit engagement; does not, in the mainstream
+reading, overturn a null result across 1.2M children. *(Confidence: high on what it argues; low
+that it refutes the cohort.)*
+
+[^lwr]: Lyons-Weiler J., Ricketson R. *Reconsideration of the immunotherapeutic pediatric safe
+dose levels of aluminum.* **J. Trace Elem. Med. Biol.** 2018;48:67–73 (the paper you shared).
+Derives a weight-corrected **Pediatric Dose Limit** and argues the schedule's per-dose µg/kg
+(e.g., ~150 µg/kg @2mo) exceeds it. *Positioning:* the limit is scaled from **oral/dietary**
+adult-animal MRLs and applied to **injected** aluminum — a cross-route extrapolation mainstream
+toxicology rejects; not adopted by regulators; IPAK-authored. *(Confidence: high on what it
+claims; the injected-from-oral scaling is its central contested step.)*
+
+[^mcfarland]: McFarland G., La Joie E., Thomas P., Lyons-Weiler J. *Acute exposure and chronic
+retention of aluminum in three vaccine schedules and effects of genetic and environmental
+variation.* **J. Trace Elem. Med. Biol.** 2020;58:126444 (the paper you shared; **corrected
+2021, vol. 65**). Models CDC vs. low-/no-Al CDC vs. Paul Thomas's **"Vaccine Friendly Plan"**
+(≈ your spaced plan) with a Priest-based retention model and a **"% days over limit"** metric
+(~24% CDC vs. ~2–5% spaced, birth–2yr). *Positioning:* co-authored by the VFP's creator
+(Paul Thomas, license suspended 2020) + IPAK; builds on the contested PDL and a modified Priest
+model with retention-amplifying assumptions. *(Confidence: high on what it reports; its "over
+limit" claim inherits the PDL's contested basis.)*
+
+[^principi]: Principi N., Esposito S. *Aluminum in vaccines: Does it create a safety problem?*
+**Vaccine** 2018;36(39):5825–31 (the paper you shared). Mainstream pediatric-ID review:
+**"no apparent reason exists to support the elimination of Al from vaccines for fear of
+neurotoxicity"**; flags only the Al-oxyhydroxide → macrophagic-myofasciitis / ME-CFS question
+as unsettled. *(Confidence: high; establishment counter-review to Framework B.)*
 
 [^aap]: Committee on Infectious Diseases, American Academy of Pediatrics. *The Role and Safety of
 Aluminum Adjuvants in Childhood Vaccines.* **Pediatrics** 2025;157(3):e2025074874. Reviews the
